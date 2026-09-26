@@ -1,6 +1,13 @@
 # This MAINTAINERS file is for folks with an interest in a particular platform
 # or board under ARM SNAPDRAGON
 
+ARDUINO VENTUNO Q
+M:	Tyler Baker <tyler.baker@oss.qualcomm.com>
+S:	Maintained
+F:	arch/arm/dts/monaco-arduino-monza-u-boot.dtsi
+F:	board/qualcomm/arduino-ventuno-q.config
+F:	doc/board/qualcomm/ventuno-q.rst
+
 QUALCOMM DRAGONWING QCS615
 M:	Aswin Murugan <aswin.murugan@oss.qualcomm.com>
 S:	Maintained
