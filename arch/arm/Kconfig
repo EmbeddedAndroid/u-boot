@@ -1161,8 +1161,6 @@ config ARCH_SNAPDRAGON
 	select ENABLE_ARM_SOC_BOOT0_HOOK if SPL
 	select SPL_DM if SPL
 	select SPL_DM_GPIO if SPL
-	select SPL_DM_PMIC if SPL
-	select SPL_DM_USB_GADGET if SPL
 	select SPL_ENV_SUPPORT if SPL
 	select SPL_EVENT if SPL
 	select SPL_GPIO if SPL
@@ -1181,8 +1179,10 @@ config ARCH_SNAPDRAGON
 	select SPL_SPMI_MSM if SPL
 	select SPL_SPRINTF if SPL
 	select SPL_STRTO if SPL
-	select SPL_USB_GADGET if SPL
+	imply SPL_DM_PMIC if SPL
+	imply SPL_DM_USB_GADGET if SPL
 	imply SPL_MMC if SPL
+	imply SPL_USB_GADGET if SPL
 	imply OF_UPSTREAM
 	imply CMD_DM
 	imply DM_USB_GADGET
