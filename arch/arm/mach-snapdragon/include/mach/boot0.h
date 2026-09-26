@@ -3,7 +3,7 @@
 #if defined(CONFIG_BOOT0_SDM845_WORKAROUND)
 #include "sdm845_spl_boot0.h"
 #else
-	b	reset
+#include "spl_el3_boot0.h"
 #endif
 #else
 #if defined(CONFIG_BOOT0_MSM8916_PSCI_WORKAROUND)
