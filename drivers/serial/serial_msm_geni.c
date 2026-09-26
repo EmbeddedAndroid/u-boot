@@ -534,7 +534,7 @@ static int msm_serial_probe(struct udevice *dev)
 	proto &= FW_REV_PROTOCOL_MSK;
 	proto >>= FW_REV_PROTOCOL_SHFT;
 
-	if (proto == GENI_SE_INVALID_PROTO) {
+	if (proto == GENI_SE_INVALID_PROTO && CONFIG_IS_ENABLED(QCOM_GENI)) {
 		qcom_geni_load_firmware(priv->base, dev);
 		proto = readl(priv->base + GENI_FW_REVISION_RO);
 		proto &= FW_REV_PROTOCOL_MSK;
