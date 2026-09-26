@@ -80,6 +80,24 @@ config BOOT0_SDM845_WORKAROUND
 	help
 	  Select this if you are building U-Boot SPL for sdm845.
 
+config BOOT0_QCOM_BOOT_CPU
+	bool "boot0.h hook to run U-Boot on a selected CPU"
+	depends on ENABLE_ARM_SOC_BOOT0_HOOK
+	help
+	  If U-Boot is entered on a CPU other than QCOM_BOOT_CPU_MPIDR, start
+	  that CPU at the U-Boot entry point with PSCI CPU_ON and turn the
+	  entering CPU off. PSCI must be available through SMC.
+
+	  On QCS8275, a kernel with pointer authentication enabled cannot
+	  bring up the Cortex-A55 cores when booted on a Cortex-A78C.
+
 endchoice
+
+config QCOM_BOOT_CPU_MPIDR
+	hex "MPIDR affinity of the CPU to run U-Boot on"
+	depends on BOOT0_QCOM_BOOT_CPU
+	default 0x0
+	help
+	  Aff3..Aff0 fields of the target CPU's MPIDR.
 
 endif
