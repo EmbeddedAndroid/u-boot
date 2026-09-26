@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ */
+
+/ {
+	/*
+	 * Boot firmware regions left out:
+	 *   0x80000000  SAIL
+	 *   0x908c0000  DDR training
+	 *   0x90c00000  SAIL mailbox and OTA
+	 *   0xd0100000  TZ carveouts and DBI dump
+	 *   0xdb100000  TZ statistics
+	 *   0xdb200000  CPUCP
+	 */
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0x0 0x90000000 0x0 0x008c0000>,
+		      <0x0 0x908c1000 0x0 0x0033f000>,
+		      <0x0 0x91100000 0x0 0x3f000000>,
+		      <0x0 0xd4400000 0x0 0x06d00000>,
+		      <0x0 0xdb300000 0x0 0x24d00000>,
+		      <0xa 0x00000000 0x2 0x00000000>,
+		      <0xe 0x00000000 0x1 0x80000000>;
+	};
+};
