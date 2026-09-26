@@ -7,6 +7,20 @@
 
 #include <hang.h>
 #include <spl.h>
+#include <timestamp.h>
+#include <version.h>
+
+void board_init_f(ulong dummy)
+{
+	/*
+	 * An SPL without a driver model serial console prints on the debug
+	 * UART, which the boot firmware leaves set up. Announce SPL there, as
+	 * preloader_console_init() does on a serial console.
+	 */
+	if (IS_ENABLED(CONFIG_DEBUG_UART) && CONFIG_IS_ENABLED(BANNER_PRINT))
+		puts("\nU-Boot " PHASE_NAME " " PLAIN_VERSION " (" U_BOOT_DATE
+		     " - " U_BOOT_TIME " " U_BOOT_TZ ")\n");
+}
 
 /* in SPL, we always use internal DT */
 int board_fdt_blob_setup(void **fdtp)
