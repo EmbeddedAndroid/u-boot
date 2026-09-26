@@ -23,8 +23,10 @@ __weak void reset_cpu(void)
 
 u32 spl_boot_device(void)
 {
-	/* TODO: check boot reason to support UFS and sdcard */
-	u32 boot_device = BOOT_DEVICE_DFU;
+	/* The boot firmware has already loaded the next stages to memory */
+	if (CONFIG_IS_ENABLED(RAM_DEVICE))
+		return BOOT_DEVICE_RAM;
 
-	return boot_device;
+	/* TODO: check boot reason to support UFS and sdcard */
+	return BOOT_DEVICE_DFU;
 }
