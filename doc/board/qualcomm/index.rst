@@ -13,6 +13,7 @@ Qualcomm
    rb3gen2
    rubikpi3
    iq8
+   uno-q
    phones
    rdp
    signing
