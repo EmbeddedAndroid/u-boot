@@ -1,6 +1,12 @@
 # This MAINTAINERS file is for folks with an interest in a particular platform
 # or board under ARM SNAPDRAGON
 
+ARDUINO UNO Q
+M:	Tyler Baker <tyler.baker@oss.qualcomm.com>
+S:	Maintained
+F:	board/qualcomm/arduino-uno-q.config
+F:	doc/board/qualcomm/uno-q.rst
+
 QUALCOMM DRAGONWING QCS615
 M:	Aswin Murugan <aswin.murugan@oss.qualcomm.com>
 S:	Maintained
