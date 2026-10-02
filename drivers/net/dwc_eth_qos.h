@@ -5,6 +5,7 @@
 
 #include <asm/gpio.h>
 #include <clk.h>
+#include <generic-phy.h>
 #include <linux/bitops.h>
 #include <phy_interface.h>
 #include <reset.h>
@@ -284,6 +285,7 @@ struct eqos_priv {
 	struct eqos_dma_ch_regs *dma_ch0_regs;
 	struct eqos_tegra186_regs *tegra186_regs;
 	void *eqos_qcom_rgmii_regs;
+	struct phy serdes;
 	struct reset_ctl reset_ctl;
 	struct gpio_desc phy_reset_gpio;
 	struct clk clk_master_bus;
@@ -322,6 +324,7 @@ void *eqos_get_driver_data(struct udevice *dev);
 extern struct eqos_config eqos_imx_config;
 extern struct eqos_config eqos_rockchip_config;
 extern struct eqos_config eqos_qcom_config;
+extern struct eqos_config eqos_qcom_sa8775p_config;
 extern struct eqos_config eqos_stm32mp13_config;
 extern struct eqos_config eqos_stm32mp15_config;
 extern struct eqos_config eqos_stm32mp25_config;

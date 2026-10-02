@@ -11,9 +11,11 @@
 #include <clk.h>
 #include <dm.h>
 #include <dm/device_compat.h>
+#include <generic-phy.h>
 #include <phy.h>
 #include <reset.h>
 #include <syscon.h>
+#include <linux/bitfield.h>
 #include <linux/bitops.h>
 #include <linux/delay.h>
 
@@ -31,6 +33,7 @@
 #define RGMII_CONFIG_LOOPBACK_EN		BIT(2)
 #define RGMII_CONFIG_PROG_SWAP			BIT(1)
 #define RGMII_CONFIG_DDR_MODE			BIT(0)
+#define RGMII_CONFIG_SGMII_CLK_DVDR		GENMASK(18, 10)
 
 /* SDCC_HC_REG_DLL_CONFIG fields */
 #define SDCC_DLL_CONFIG_DLL_RST			BIT(30)
@@ -70,6 +73,16 @@
 #define RGMII_CONFIG2_DATA_DIVIDE_CLK_SEL	BIT(6)
 #define RGMII_CONFIG2_TX_CLK_PHASE_SHIFT_EN	BIT(5)
 
+/* EMAC_WRAPPER_SGMII_PHY_CNTRL1 fields */
+#define SGMII_PHY_CNTRL1_SGMII_TX_TO_RX_LOOPBACK_EN	BIT(3)
+
+#define SGMII_10M_RX_CLK_DVDR			0x31
+
+/* MAC PCS auto-negotiation control, in the MAC register space */
+#define EQOS_MAC_AN_CONTROL			0xe0
+#define EQOS_MAC_AN_CONTROL_RAN			BIT(9)
+#define EQOS_MAC_AN_CONTROL_ANE			BIT(12)
+
 struct dwmac_rgmii_regs {
 	u32 io_macro_config;		/* 0x00 */
 	u32 sdcc_hc_dll_config;		/* 0x04 */
@@ -82,7 +95,9 @@ struct dwmac_rgmii_regs {
 	u32 io_macro_debug1;		/* 0x20 */
 	u32 reserved_2;			/* 0x24 */
 	u32 emac_sys_low_power_dbg;	/* 0x28 */
-	u32 reserved_3[53];		/* upto 0x100 */
+	u32 reserved_3[50];		/* 0x2c */
+	u32 sgmii_phy_cntrl1;		/* 0xf4 */
+	u32 reserved_4[2];		/* upto 0x100 */
 };
 
 static struct dwmac_rgmii_regs emac_v2_3_0_por = {
@@ -604,6 +619,170 @@ static struct eqos_ops eqos_qcom_ops = {
 	.eqos_get_enetaddr = eqos_null_ops,
 };
 
+/*
+ * EMAC v4 (SA8775P, QCS8300): the MAC reaches its PHY through the SGMII
+ * SerDes, in SGMII or 2500BASE-X mode.
+ */
+static void ethqos_set_sgmii_loopback(struct eqos_priv *eqos, bool enable)
+{
+	struct dwmac_rgmii_regs *regs = eqos->eqos_qcom_rgmii_regs;
+
+	if (eqos->config->interface(eqos->dev) != PHY_INTERFACE_MODE_2500BASEX)
+		return;
+
+	if (enable)
+		setbits_le32(&regs->sgmii_phy_cntrl1,
+			     SGMII_PHY_CNTRL1_SGMII_TX_TO_RX_LOOPBACK_EN);
+	else
+		clrbits_le32(&regs->sgmii_phy_cntrl1,
+			     SGMII_PHY_CNTRL1_SGMII_TX_TO_RX_LOOPBACK_EN);
+}
+
+static int eqos_start_clks_qcom_sgmii(struct udevice *dev)
+{
+	struct eqos_priv *eqos = dev_get_priv(dev);
+	int ret;
+
+	ret = eqos_start_clks_qcom(dev);
+	if (ret)
+		return ret;
+
+	ret = generic_phy_set_mode(&eqos->serdes, PHY_MODE_ETHERNET,
+				   eqos->config->interface(dev));
+	if (ret)
+		return ret;
+
+	return generic_phy_power_on(&eqos->serdes);
+}
+
+static int eqos_stop_clks_qcom_sgmii(struct udevice *dev)
+{
+	struct eqos_priv *eqos = dev_get_priv(dev);
+	int ret;
+
+	ret = generic_phy_power_off(&eqos->serdes);
+	if (ret)
+		return ret;
+
+	return eqos_stop_clks_qcom(dev);
+}
+
+static int eqos_start_resets_qcom_sgmii(struct udevice *dev)
+{
+	struct eqos_priv *eqos = dev_get_priv(dev);
+
+	/*
+	 * The DMA software reset needs an RX clock, which a 2500BASE-X
+	 * SerDes only provides once the link is up: loop its TX back to
+	 * RX until then.
+	 */
+	ethqos_set_sgmii_loopback(eqos, true);
+	ethqos_set_func_clk_en(eqos->eqos_qcom_rgmii_regs);
+
+	return 0;
+}
+
+static int eqos_set_tx_clk_speed_qcom_sgmii(struct udevice *dev)
+{
+	struct eqos_priv *eqos = dev_get_priv(dev);
+	struct dwmac_rgmii_regs *regs = eqos->eqos_qcom_rgmii_regs;
+	void *an_ctrl = (void *)eqos->mac_regs + EQOS_MAC_AN_CONTROL;
+	phy_interface_t interface = eqos->phy->interface;
+	int ret;
+
+	ethqos_set_sgmii_loopback(eqos, false);
+
+	/* The PHY reports the host interface that suits the link speed */
+	ret = generic_phy_set_mode(&eqos->serdes, PHY_MODE_ETHERNET,
+				   interface);
+	if (ret) {
+		dev_err(dev, "SerDes %s mode failed: %d\n",
+			phy_string_for_interface(interface), ret);
+		return ret;
+	}
+
+	switch (eqos->phy->speed) {
+	case SPEED_2500:
+	case SPEED_1000:
+		setbits_le32(&regs->io_macro_config2,
+			     RGMII_CONFIG2_RGMII_CLK_SEL_CFG);
+		break;
+	case SPEED_100:
+		break;
+	case SPEED_10:
+		clrsetbits_le32(&regs->io_macro_config,
+				RGMII_CONFIG_SGMII_CLK_DVDR,
+				FIELD_PREP(RGMII_CONFIG_SGMII_CLK_DVDR,
+					   SGMII_10M_RX_CLK_DVDR));
+		break;
+	default:
+		dev_err(dev, "invalid speed %d\n", eqos->phy->speed);
+		return -EINVAL;
+	}
+
+	/* SGMII carries in-band status, 2500BASE-X does not */
+	if (interface == PHY_INTERFACE_MODE_SGMII)
+		setbits_le32(an_ctrl, EQOS_MAC_AN_CONTROL_ANE |
+			     EQOS_MAC_AN_CONTROL_RAN);
+	else
+		clrbits_le32(an_ctrl, EQOS_MAC_AN_CONTROL_ANE);
+
+	return 0;
+}
+
+static int eqos_probe_resources_qcom_sgmii(struct udevice *dev)
+{
+	struct eqos_priv *eqos = dev_get_priv(dev);
+	phy_interface_t interface;
+	int ret;
+
+	ret = eqos_get_base_addr_dt(dev);
+	if (ret)
+		return ret;
+
+	interface = eqos->config->interface(dev);
+	if (interface != PHY_INTERFACE_MODE_SGMII &&
+	    interface != PHY_INTERFACE_MODE_2500BASEX) {
+		dev_err(dev, "unsupported PHY interface %s\n",
+			phy_string_for_interface(interface));
+		return -EINVAL;
+	}
+
+	eqos->tx_fifo_sz = dev_read_u32_default(dev, "tx-fifo-depth", 0);
+	eqos->rx_fifo_sz = dev_read_u32_default(dev, "rx-fifo-depth", 0);
+
+	eqos->eqos_qcom_rgmii_regs = dev_read_addr_name_ptr(dev, "rgmii");
+	if (!eqos->eqos_qcom_rgmii_regs) {
+		dev_err(dev, "no rgmii registers\n");
+		return -EINVAL;
+	}
+
+	ret = generic_phy_get_by_name(dev, "serdes", &eqos->serdes);
+	if (ret) {
+		dev_err(dev, "no SerDes PHY: %d\n", ret);
+		return ret;
+	}
+
+	return 0;
+}
+
+static struct eqos_ops eqos_qcom_sgmii_ops = {
+	.eqos_inval_desc = eqos_inval_desc_generic,
+	.eqos_flush_desc = eqos_flush_desc_generic,
+	.eqos_inval_buffer = eqos_inval_buffer_generic,
+	.eqos_flush_buffer = eqos_flush_buffer_generic,
+	.eqos_probe_resources = eqos_probe_resources_qcom_sgmii,
+	.eqos_remove_resources = eqos_null_ops,
+	.eqos_stop_resets = eqos_null_ops,
+	.eqos_start_resets = eqos_start_resets_qcom_sgmii,
+	.eqos_stop_clks = eqos_stop_clks_qcom_sgmii,
+	.eqos_start_clks = eqos_start_clks_qcom_sgmii,
+	.eqos_calibrate_pads = eqos_null_ops,
+	.eqos_disable_calibration = eqos_null_ops,
+	.eqos_set_tx_clk_speed = eqos_set_tx_clk_speed_qcom_sgmii,
+	.eqos_get_enetaddr = eqos_null_ops,
+};
+
 struct eqos_config __maybe_unused eqos_qcom_config = {
 	.reg_access_always_ok = false,
 	.mdio_wait = 10,
@@ -613,4 +792,17 @@ struct eqos_config __maybe_unused eqos_qcom_config = {
 	.axi_bus_width = EQOS_AXI_WIDTH_64,
 	.interface = dev_read_phy_mode,
 	.ops = &eqos_qcom_ops
+};
+
+struct eqos_config __maybe_unused eqos_qcom_sa8775p_config = {
+	.reg_access_always_ok = false,
+	.mdio_wait = 10,
+	.swr_wait = 50,
+	.config_mac = EQOS_MAC_RXQ_CTRL0_RXQ0EN_ENABLED_DCB,
+	.config_mac_mdio = EQOS_MAC_MDIO_ADDRESS_CR_250_300,
+	.axi_bus_width = EQOS_AXI_WIDTH_64,
+	.mtl_regs_offset = 0x8000,
+	.dma_ch0_regs_offset = 0x8100,
+	.interface = dev_read_phy_mode,
+	.ops = &eqos_qcom_sgmii_ops
 };
