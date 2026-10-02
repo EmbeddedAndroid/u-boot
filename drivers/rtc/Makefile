@@ -30,6 +30,7 @@ obj-$(CONFIG_RTC_PCF85063) += pcf85063.o
 obj-$(CONFIG_RTC_PCF8563) += pcf8563.o
 obj-$(CONFIG_RTC_PCF2127) += pcf2127.o
 obj-$(CONFIG_RTC_PL031) += pl031.o
+obj-$(CONFIG_RTC_QCOM_PMIC) += qcom_pmic_rtc.o
 obj-$(CONFIG_RTC_PT7C4338) += pt7c4338.o
 obj-$(CONFIG_RTC_RV3028) += rv3028.o
 obj-$(CONFIG_RTC_RV3029) += rv3029.o
