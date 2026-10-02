@@ -178,6 +178,16 @@ config RTC_PT7C4338
 	bool "Enable Pericom Technology PT7C4338 RTC driver"
 	depends on DM_RTC
 
+config RTC_QCOM_PMIC
+	bool "Enable Qualcomm SPMI PMIC RTC driver"
+	depends on DM_RTC && PMIC_QCOM
+	help
+	  Support for the real-time clock of Qualcomm SPMI PMICs
+	  (qcom,pm8941-rtc and qcom,pmk8350-rtc). As in the Linux rtc-pm8xxx
+	  driver, the time is set by writing the counter when the board
+	  allows it (allow-set-time), or else by storing an offset in an
+	  nvmem cell or in the UEFI variable RTCInfo (qcom,uefi-rtc-info).
+
 config RTC_RV3028
 	bool "Enable RV3028 driver"
 	depends on DM_RTC
