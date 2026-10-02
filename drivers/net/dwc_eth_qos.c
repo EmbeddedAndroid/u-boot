@@ -481,6 +481,18 @@ static int eqos_set_gmii_speed(struct udevice *dev)
 	return 0;
 }
 
+static int eqos_set_2500_speed(struct udevice *dev)
+{
+	struct eqos_priv *eqos = dev_get_priv(dev);
+
+	debug("%s(dev=%p):\n", __func__, dev);
+
+	clrsetbits_le32(&eqos->mac_regs->configuration,
+			EQOS_MAC_CONFIGURATION_PS, EQOS_MAC_CONFIGURATION_FES);
+
+	return 0;
+}
+
 static int eqos_set_mii_speed_100(struct udevice *dev)
 {
 	struct eqos_priv *eqos = dev_get_priv(dev);
@@ -557,6 +569,10 @@ static int eqos_adjust_link(struct udevice *dev)
 	}
 
 	switch (eqos->phy->speed) {
+	case SPEED_2500:
+		en_calibration = true;
+		ret = eqos_set_2500_speed(dev);
+		break;
 	case SPEED_1000:
 		en_calibration = true;
 		ret = eqos_set_gmii_speed(dev);
