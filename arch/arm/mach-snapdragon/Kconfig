@@ -101,4 +101,14 @@ config QCOM_SNAGBOOT_MODE
 	  Build U-Boot to be loaded in Snagboot mode on Qualcomm platforms
 	  for device/factory provisioning using fastboot.
 
+config QCOM_SNAGBOOT_SPI_NOR_FIXUP
+	bool "Enable spi0-aliased SPI-NOR node for Snagboot mode"
+	depends on QCOM_SNAGBOOT_MODE
+	select OF_BOARD_FIXUP
+	help
+	  Enable the SPI-NOR flash node referenced by the "spi0" alias (and
+	  its parent bus node) when booting in Snagboot mode. Boards that
+	  use a different medium for Snagboot provisioning should leave
+	  this disabled.
+
 endif
