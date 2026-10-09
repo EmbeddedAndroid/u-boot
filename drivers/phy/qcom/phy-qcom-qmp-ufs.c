@@ -1145,7 +1145,7 @@ static const struct qmp_ufs_init_tbl sm8750_ufsphy_rx[] = {
 static const struct qmp_ufs_init_tbl sm8750_ufsphy_pcs[] = {
 	QMP_PHY_INIT_CFG(QPHY_V6_PCS_UFS_MULTI_LANE_CTRL1, 0x02),
 	QMP_PHY_INIT_CFG(QPHY_V6_PCS_UFS_TX_MID_TERM_CTRL1, 0x43),
-	QMP_PHY_INIT_CFG(QPHY_V6_PCS_UFS_PCS_CTRL1, 0x40),
+	QMP_PHY_INIT_CFG(QPHY_V6_PCS_UFS_PCS_CTRL1, 0x41),
 	QMP_PHY_INIT_CFG(QPHY_V6_PCS_UFS_PLL_CNTL, 0x33),
 	QMP_PHY_INIT_CFG(QPHY_V6_PCS_UFS_TX_LARGE_AMP_DRV_LVL, 0x0f),
 	QMP_PHY_INIT_CFG(QPHY_V6_PCS_UFS_RX_SIGDET_CTRL2, 0x68),
@@ -1153,10 +1153,10 @@ static const struct qmp_ufs_init_tbl sm8750_ufsphy_pcs[] = {
 	QMP_PHY_INIT_CFG(QPHY_V6_PCS_UFS_TX_POST_EMP_LVL_S5, 0x12),
 	QMP_PHY_INIT_CFG(QPHY_V6_PCS_UFS_TX_POST_EMP_LVL_S6, 0x15),
 	QMP_PHY_INIT_CFG(QPHY_V6_PCS_UFS_TX_POST_EMP_LVL_S7, 0x19),
-};
-
-static const struct qmp_ufs_init_tbl sm8750_ufsphy_hs_b_pcs[] = {
-	QMP_PHY_INIT_CFG(QPHY_V6_PCS_UFS_PCS_CTRL1, 0x41),
+	QMP_PHY_INIT_CFG(QPHY_V6_PCS_UFS_TX_HSGEAR_CAPABILITY, 0x05),
+	QMP_PHY_INIT_CFG(QPHY_V6_PCS_UFS_RX_HSGEAR_CAPABILITY, 0x05),
+	QMP_PHY_INIT_CFG(QPHY_V6_PCS_UFS_RX_HS_G5_SYNC_LENGTH_CAPABILITY, 0x4d),
+	QMP_PHY_INIT_CFG(QPHY_V6_PCS_UFS_RX_HSG5_SYNC_WAIT_TIME, 0x9e),
 };
 
 static const struct qmp_ufs_cfg milos_ufsphy_cfg = {
@@ -1384,10 +1384,6 @@ static const struct qmp_ufs_cfg sm8750_ufsphy_cfg = {
 		.rx_num		= ARRAY_SIZE(sm8750_ufsphy_rx),
 		.pcs		= sm8750_ufsphy_pcs,
 		.pcs_num	= ARRAY_SIZE(sm8750_ufsphy_pcs),
-	},
-	.tbls_hs_b = {
-		.pcs		= sm8750_ufsphy_hs_b_pcs,
-		.pcs_num	= ARRAY_SIZE(sm8750_ufsphy_hs_b_pcs),
 	},
 	.clk_list		= sdm845_ufs_phy_clk_l,
 	.num_clks		= ARRAY_SIZE(sdm845_ufs_phy_clk_l),
