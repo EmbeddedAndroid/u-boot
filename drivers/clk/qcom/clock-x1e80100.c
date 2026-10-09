@@ -38,6 +38,21 @@ static const struct freq_tbl ftbl_gcc_qupv3_wrap0_s4_clk_src[] = {
 	{ }
 };
 
+static const struct freq_tbl ftbl_gcc_ufs_phy_axi_clk_src[] = {
+	F(25000000, CFG_CLK_SRC_GPLL0_EVEN, 12, 0, 0),
+	F(75000000, CFG_CLK_SRC_GPLL0_EVEN, 4, 0, 0),
+	F(150000000, CFG_CLK_SRC_GPLL0, 4, 0, 0),
+	F(300000000, CFG_CLK_SRC_GPLL0, 2, 0, 0),
+	{ }
+};
+
+static const struct freq_tbl ftbl_gcc_ufs_phy_unipro_core_clk_src[] = {
+	F(75000000, CFG_CLK_SRC_GPLL0_EVEN, 4, 0, 0),
+	F(150000000, CFG_CLK_SRC_GPLL0, 4, 0, 0),
+	F(300000000, CFG_CLK_SRC_GPLL0, 2, 0, 0),
+	{ }
+};
+
 static const struct freq_tbl ftbl_gcc_sdcc2_apps_clk_src[] = {
 	F(400000, CFG_CLK_SRC_CXO, 12, 1, 4),
 	F(25000000, CFG_CLK_SRC_GPLL0_EVEN, 12, 0, 0),
@@ -105,6 +120,15 @@ static ulong x1e80100_set_rate(struct clk *clk, ulong rate)
 	case GCC_PCIE_6A_PHY_RCHNG_CLK:
 		freq = qcom_find_freq(ftbl_gcc_pcie_0_phy_rchng_clk_src, rate);
 		clk_rcg_set_rate(priv->base, 0x31070, freq->pre_div, freq->src);
+		return freq->freq;
+	case GCC_UFS_PHY_AXI_CLK:
+		freq = qcom_find_freq(ftbl_gcc_ufs_phy_axi_clk_src, rate);
+		clk_rcg_set_rate_mnd(priv->base, 0x77030,
+				     freq->pre_div, freq->m, freq->n, freq->src, 8);
+		return freq->freq;
+	case GCC_UFS_PHY_UNIPRO_CORE_CLK:
+		freq = qcom_find_freq(ftbl_gcc_ufs_phy_unipro_core_clk_src, rate);
+		clk_rcg_set_rate(priv->base, 0x77098, freq->pre_div, freq->src);
 		return freq->freq;
 	default:
 		return 0;
