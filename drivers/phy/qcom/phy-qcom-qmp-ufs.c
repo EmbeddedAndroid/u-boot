@@ -1541,8 +1541,16 @@ reset_get_err:
 static int qmp_ufs_clk_init(struct udevice *dev, struct qmp_ufs_priv *qmp)
 {
 	const struct qmp_ufs_cfg *cfg = qmp->cfg;
-	int num = cfg->num_clks;
+	int num;
 	int i, ret;
+
+	/*
+	 * Newer device trees also list the TCSR UFS clock reference ("qref"),
+	 * which is off unless the boot firmware used UFS.
+	 */
+	num = dev_count_phandle_with_args(dev, "clocks", "#clock-cells", 0);
+	if (num < cfg->num_clks)
+		num = cfg->num_clks;
 
 	qmp->clk_count = 0;
 	qmp->clks = devm_kcalloc(dev, num, sizeof(*qmp->clks), GFP_KERNEL);
