@@ -22,3 +22,10 @@ config INTERCONNECT_QCOM_SM8650
 	depends on INTERCONNECT_QCOM_RPMH
 	help
 	  Enable support for the interconnect driver for the SM8650 SoC.
+
+config INTERCONNECT_QCOM_X1E80100
+	bool "Enable interconnect support for X1E80100 SoC"
+	depends on INTERCONNECT_QCOM_RPMH
+	help
+	  Enable support for the interconnect driver for the X1E80100 SoC.
+
