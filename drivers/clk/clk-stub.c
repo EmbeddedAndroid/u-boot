@@ -62,6 +62,7 @@ static const struct udevice_id stub_clk_ids[] = {
 	{ .compatible = "qcom,sm8550-rpmh-clk" },
 	{ .compatible = "qcom,sm8650-rpmh-clk" },
 	{ .compatible = "qcom,sm8750-rpmh-clk" },
+	{ .compatible = "qcom,x1e80100-rpmh-clk" },
 	{ }
 };
 
