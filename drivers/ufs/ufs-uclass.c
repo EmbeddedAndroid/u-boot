@@ -928,7 +928,14 @@ static int ufshcd_send_command(struct ufs_hba *hba, unsigned int task_tag)
 
 		if (hba->max_pwr_info.info.pwr_rx != SLOWAUTO_MODE &&
 		    hba->max_pwr_info.info.pwr_tx != SLOWAUTO_MODE) {
-			if (get_timer(start) > QUERY_REQ_TIMEOUT) {
+			/*
+			 * HACK (PWM test stopgap): one request moves up to
+			 * UFS_MAX_BYTES (32 MiB), which takes far longer
+			 * than 1.5 s on a PWM link.
+			 */
+			if (get_timer(start) > (hba->pwr_info.pwr_rx == FAST_MODE ||
+						hba->pwr_info.pwr_rx == FASTAUTO_MODE ?
+						QUERY_REQ_TIMEOUT : 120000)) {
 				dev_err(hba->dev,
 					"Timedout waiting for UTP response\n");
 				return -ETIMEDOUT;
@@ -2158,6 +2165,16 @@ static int ufs_start(struct ufs_hba *hba)
 		dev_err(hba->dev,
 			"%s: Failed getting max supported power mode\n",
 			__func__);
+	} else if (1) {
+		/*
+		 * HACK (test stopgap, not a fix): the HS power mode change
+		 * fails on X1E80100, so leave the link in PWM-G1 x1 as link
+		 * startup set it. A PWM gear change is not attempted: it is
+		 * refused here too (PA_MAXRXPWMGEAR reads 1 on both ends).
+		 */
+		dev_err(hba->dev, "HACK: UFS PWM test stopgap: staying in PWM-G1 x1\n");
+		ufshcd_print_pwr_info(hba);
+		ret = 0;
 	} else {
 		ret = ufshcd_change_power_mode(hba, &hba->max_pwr_info.info);
 		if (ret) {
