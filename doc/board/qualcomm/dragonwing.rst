@@ -44,3 +44,16 @@ $ edl.py --loader /path/to/prog_firehose_ddr.elf w uefi_a u-boot.mbn
 
 .. _edl: https://github.com/bkerler/edl
 .. _dragonwing IQ9 bootbinaries: https://artifacts.codelinaro.org/ui/native/qli-ci/flashable-binaries/qimpsdk/qcs9075-rb8-core-kit
+
+TF-A and OP-TEE on the QCS615 Ride
+----------------------------------
+On the QCS615 Ride, U-Boot can instead run as the BL33 of TF-A, with OP-TEE as
+BL32 (TF-A ``PLAT=talos_generic``). Build it from ``qcom_defconfig`` with the
+TF-A/OP-TEE and QCS615 Ride config fragments::
+
+  $ export CROSS_COMPILE=<aarch64 toolchain prefix>
+  $ make qcom_defconfig tfa-optee.config qcs615-ride.config
+  $ make -j8
+
+and pass ``u-boot.bin`` to the TF-A build as ``BL33``. U-Boot finds OP-TEE and
+copies its node into the device tree it passes to the OS.
