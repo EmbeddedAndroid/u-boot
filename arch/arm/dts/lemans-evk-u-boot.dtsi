@@ -21,3 +21,28 @@
 &pmm8654au_0_rtc {
 	allow-set-time;
 };
+
+&qup_spi21_default {
+	function = "sail_top";
+};
+
+&{/aliases} {
+	spi0 = &spi21;
+};
+
+&qupv3_id_3 {
+	bootph-all;
+};
+
+&spi21 {
+	assigned-clocks = <&gcc GCC_QUPV3_WRAP3_S0_CLK>;
+	assigned-clock-rates = <48000000>;
+
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <48000000>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+	};
+};
