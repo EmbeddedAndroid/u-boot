@@ -12,6 +12,8 @@
 #include <fdtdec.h>
 #include <asm/io.h>
 #include <dm/device_compat.h>
+#include <dm/lists.h>
+#include <dm/ofnode.h>
 #include <spmi/spmi.h>
 
 /* PMIC Arbiter configuration registers */
@@ -374,4 +376,207 @@ U_BOOT_DRIVER(msm_spmi) = {
 	.ops = &msm_spmi_ops,
 	.probe = msm_spmi_probe,
 	.priv_auto = sizeof(struct msm_spmi_priv),
+};
+
+/*
+ * PMIC arbiter v8 (Glymur): one arbiter node ("core", "chnls", "obsrvr",
+ * "chnl_map") with a child node per SPMI bus ("cnfg", "intr", "chnl_owner").
+ * The global APID space is split between the buses in order, each taking
+ * the number of APIDs in its PMIC_ARB_FEATURES register. The APID map holds
+ * the PPID (SID [12:8], peripheral [7:0]); read/write channels are 0x200
+ * apart, observer channels 0x20 apart in a 0x40000 window per EE.
+ */
+#define PMIC_ARB_VERSION_V8_MIN		0x80000000
+#define PMIC_ARB_V8_FEATURES(n)		(0x0004 + 0x4 * (n))
+#define PMIC_ARB_V8_PERIPH_MASK		GENMASK(12, 0)
+#define PMIC_ARB_V8_PPID_SID(m)		(((m) >> 8) & 0x1f)
+#define PMIC_ARB_V8_PPID_PID(m)		((m) & 0xff)
+#define SPMI_V8_RW_CH_OFFSET(apid)	((apid) * 0x200)
+#define SPMI_V8_OBS_CH_OFFSET(ee, apid)	((ee) * 0x40000 + (apid) * 0x20)
+#define SPMI_V8_MAX_BUSES		4
+
+struct msm_spmi_v8_arb {
+	phys_addr_t core;
+	phys_addr_t chnls;
+	phys_addr_t obsrvr;
+	phys_addr_t apid_map;
+	u32 ee;
+};
+
+struct msm_spmi_v8_bus {
+	phys_addr_t owner;
+	/* APID per [SID][peripheral] | SPMI_CHANNEL_VALID [| READ_ONLY] */
+	uint32_t apid[SPMI_MAX_SLAVES][SPMI_MAX_PERIPH];
+};
+
+static int msm_spmi_v8_xfer(struct udevice *dev, int usid, int pid, int off,
+			    bool write, uint8_t val)
+{
+	struct msm_spmi_v8_arb *arb = dev_get_priv(dev_get_parent(dev));
+	struct msm_spmi_v8_bus *bus = dev_get_priv(dev);
+	phys_addr_t ch;
+	uint32_t map, reg;
+	unsigned int timeout = 100000;
+
+	if (usid >= SPMI_MAX_SLAVES || pid >= SPMI_MAX_PERIPH)
+		return -EIO;
+	map = bus->apid[usid][pid];
+	if (!(map & SPMI_CHANNEL_VALID))
+		return -EINVAL;
+	if (write && (map & SPMI_CHANNEL_READ_ONLY))
+		return -EPERM;
+
+	if (write)
+		ch = arb->chnls + SPMI_V8_RW_CH_OFFSET(map & SPMI_CHANNEL_MASK);
+	else
+		ch = arb->obsrvr + SPMI_V8_OBS_CH_OFFSET(arb->ee, map & SPMI_CHANNEL_MASK);
+
+	writel(0x0, ch + SPMI_REG_CONFIG);
+	if (write)
+		writel(val, ch + SPMI_REG_WDATA);
+	writel(pmic_arb_fmt_cmd_v2(write ? SPMI_CMD_EXT_REG_WRITE_LONG :
+				   SPMI_CMD_EXT_REG_READ_LONG, off),
+	       ch + SPMI_REG_CMD0);
+
+	do {
+		reg = readl(ch + SPMI_REG_STATUS);
+	} while (!reg && --timeout);
+
+	if (reg != SPMI_STATUS_DONE) {
+		dev_err(dev, "SPMI %s failure %#x [%d:%#x:%#x]\n",
+			write ? "write" : "read", reg, usid, pid, off);
+		return -EIO;
+	}
+
+	return write ? 0 : readl(ch + SPMI_REG_RDATA) & 0xff;
+}
+
+static int msm_spmi_v8_read(struct udevice *dev, int usid, int pid, int off)
+{
+	return msm_spmi_v8_xfer(dev, usid, pid, off, false, 0);
+}
+
+static int msm_spmi_v8_write(struct udevice *dev, int usid, int pid, int off,
+			     uint8_t val)
+{
+	return msm_spmi_v8_xfer(dev, usid, pid, off, true, val);
+}
+
+static struct dm_spmi_ops msm_spmi_v8_ops = {
+	.read = msm_spmi_v8_read,
+	.write = msm_spmi_v8_write,
+};
+
+static int msm_spmi_v8_bus_probe(struct udevice *dev)
+{
+	struct msm_spmi_v8_arb *arb = dev_get_priv(dev_get_parent(dev));
+	struct msm_spmi_v8_bus *bus = dev_get_priv(dev);
+	ofnode node;
+	unsigned int index = 0, base = 0, count, i;
+
+	bus->owner = dev_read_addr_name(dev, "chnl_owner");
+	if (bus->owner == FDT_ADDR_T_NONE)
+		return -EINVAL;
+
+	/* This bus' position among the arbiter's buses gives its APID range. */
+	dev_for_each_subnode(node, dev_get_parent(dev)) {
+		if (ofnode_equal(node, dev_ofnode(dev)))
+			break;
+		index++;
+	}
+	if (index >= SPMI_V8_MAX_BUSES)
+		return -EINVAL;
+
+	for (i = 0; i < index; i++)
+		base += readl(arb->core + PMIC_ARB_V8_FEATURES(i)) &
+			PMIC_ARB_V8_PERIPH_MASK;
+	count = readl(arb->core + PMIC_ARB_V8_FEATURES(index)) &
+		PMIC_ARB_V8_PERIPH_MASK;
+
+	for (i = base; i < base + count; i++) {
+		uint32_t map = readl(arb->apid_map + 0x4 * i);
+		uint32_t owner = SPMI_OWNERSHIP_PERIPH2OWNER(readl(bus->owner +
+								   0x4 * (i - base)));
+		uint8_t sid = PMIC_ARB_V8_PPID_SID(map);
+		uint8_t pid = PMIC_ARB_V8_PPID_PID(map);
+		uint32_t prev;
+
+		if (!map || sid >= SPMI_MAX_SLAVES)
+			continue;
+
+		/*
+		 * A PPID may have an APID per EE: keep the one this EE owns,
+		 * else the last one, read only.
+		 */
+		prev = bus->apid[sid][pid];
+		if ((prev & SPMI_CHANNEL_VALID) && !(prev & SPMI_CHANNEL_READ_ONLY))
+			continue;
+		bus->apid[sid][pid] = i | SPMI_CHANNEL_VALID;
+		if (owner != arb->ee)
+			bus->apid[sid][pid] |= SPMI_CHANNEL_READ_ONLY;
+	}
+
+	dev_dbg(dev, "bus %u: APIDs %u..%u\n", index, base, base + count - 1);
+
+	return 0;
+}
+
+U_BOOT_DRIVER(msm_spmi_v8_bus) = {
+	.name = "msm_spmi_v8_bus",
+	.id = UCLASS_SPMI,
+	.ops = &msm_spmi_v8_ops,
+	.probe = msm_spmi_v8_bus_probe,
+	.priv_auto = sizeof(struct msm_spmi_v8_bus),
+};
+
+static int msm_spmi_v8_arb_bind(struct udevice *dev)
+{
+	ofnode node;
+	int ret;
+
+	dev_for_each_subnode(node, dev) {
+		ret = device_bind_driver_to_node(dev, "msm_spmi_v8_bus",
+						 ofnode_get_name(node), node, NULL);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
+}
+
+static int msm_spmi_v8_arb_probe(struct udevice *dev)
+{
+	struct msm_spmi_v8_arb *arb = dev_get_priv(dev);
+	u32 hw_ver;
+
+	arb->core = dev_read_addr_name(dev, "core");
+	arb->chnls = dev_read_addr_name(dev, "chnls");
+	arb->obsrvr = dev_read_addr_name(dev, "obsrvr");
+	arb->apid_map = dev_read_addr_name(dev, "chnl_map");
+	if (arb->core == FDT_ADDR_T_NONE || arb->chnls == FDT_ADDR_T_NONE ||
+	    arb->obsrvr == FDT_ADDR_T_NONE || arb->apid_map == FDT_ADDR_T_NONE)
+		return -EINVAL;
+	dev_read_u32(dev, "qcom,ee", &arb->ee);
+
+	hw_ver = readl(arb->core + PMIC_ARB_VERSION);
+	if (hw_ver < PMIC_ARB_VERSION_V8_MIN) {
+		dev_err(dev, "PMIC arbiter %#x is not v8\n", hw_ver);
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
+static const struct udevice_id msm_spmi_v8_ids[] = {
+	{ .compatible = "qcom,glymur-spmi-pmic-arb" },
+	{ }
+};
+
+U_BOOT_DRIVER(msm_spmi_v8_arb) = {
+	.name = "msm_spmi_v8_arb",
+	.id = UCLASS_NOP,
+	.of_match = msm_spmi_v8_ids,
+	.bind = msm_spmi_v8_arb_bind,
+	.probe = msm_spmi_v8_arb_probe,
+	.priv_auto = sizeof(struct msm_spmi_v8_arb),
 };
