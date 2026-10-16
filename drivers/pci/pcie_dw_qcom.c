@@ -287,7 +287,8 @@ static void qcom_pcie_configure(struct qcom_pcie *priv)
 	val &= ~PORT_LINK_MODE_MASK;
 	writel(val, priv->dw.dbi_base + PCIE_PORT_LINK_CONTROL);
 
-	dw_pcie_link_set_max_link_width(&priv->dw, 2);
+	dw_pcie_link_set_max_link_width(&priv->dw,
+					dev_read_u32_default(priv->dw.dev, "num-lanes", 2));
 
 	dw_pcie_dbi_write_enable(&priv->dw, false);
 }
