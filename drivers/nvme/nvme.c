@@ -14,6 +14,7 @@
 #include <phys2bus.h>
 #include <time.h>
 #include <dm/device-internal.h>
+#include <linux/delay.h>
 #include <linux/compat.h>
 #include "nvme.h"
 
@@ -43,6 +44,8 @@ static inline void nvme_invalidate_cache_aligned(uintptr_t addr, int length)
 
 	invalidate_dcache_range(start_addr, end_addr);
 }
+
+#define NVME_LINK_READY_TIMEOUT_MS	5000
 
 static int nvme_wait_csts(struct nvme_dev *dev, u32 mask, u32 val)
 {
@@ -828,15 +831,24 @@ U_BOOT_DRIVER(nvme_blk) = {
 int nvme_init(struct udevice *udev)
 {
 	struct nvme_dev *ndev = dev_get_priv(udev);
+	ulong start;
 	struct nvme_id_ns *id;
 	int ret;
 
 	ndev->udev = udev;
 	INIT_LIST_HEAD(&ndev->namespaces);
-	if (readl(&ndev->bar->csts) == -1) {
-		ret = -EBUSY;
-		printf("Error: %s: Controller not ready!\n", udev->name);
-		goto free_nvme;
+	/*
+	 * Some controllers answer memory reads with all ones for a while
+	 * after the link comes up; give them time before giving up.
+	 */
+	start = get_timer(0);
+	while (readl(&ndev->bar->csts) == -1) {
+		if (get_timer(start) > NVME_LINK_READY_TIMEOUT_MS) {
+			ret = -EBUSY;
+			printf("Error: %s: Controller not ready!\n", udev->name);
+			goto free_nvme;
+		}
+		mdelay(10);
 	}
 
 	ndev->queues = malloc(NVME_Q_NUM * sizeof(struct nvme_queue *));
