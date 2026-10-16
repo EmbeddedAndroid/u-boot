@@ -757,7 +757,12 @@ static const struct udevice_id qcom_spmi_pmic_gpio_ids[] = {
 	{ .compatible = "qcom,pm8550ve-gpio" },
 	{ .compatible = "qcom,pm8550vs-gpio" },
 	{ .compatible = "qcom,pm8998-gpio" },
+	{ .compatible = "qcom,pmcx0102-gpio" },
+	{ .compatible = "qcom,pmh0101-gpio" },
+	{ .compatible = "qcom,pmh0104-gpio" },
+	{ .compatible = "qcom,pmh0110-gpio" },
 	{ .compatible = "qcom,pmk8550-gpio" },
+	{ .compatible = "qcom,pmk8850-gpio" },
 	{ .compatible = "qcom,pmr735d-gpio" },
 	{ }
 };
