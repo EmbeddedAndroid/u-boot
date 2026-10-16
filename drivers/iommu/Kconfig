@@ -24,6 +24,15 @@ config APPLE_DART
 	  configuration to put the DART into bypass mode such that it can
 	  be used transparently by U-Boot.
 
+config ARM_SMMU_V3_BYPASS
+	bool "Arm SMMUv3 in bypass"
+	depends on IOMMU
+	help
+	  Support an Arm SMMUv3 that the boot firmware leaves disabled, so
+	  that transactions bypass it. The driver does not program the SMMU;
+	  it only lets the devices behind it probe, and refuses an SMMUv3
+	  that is enabled or set to abort.
+
 config QCOM_HYP_SMMU
 	bool "Qualcomm quirky SMMU support"
 	depends on IOMMU && ARCH_SNAPDRAGON
