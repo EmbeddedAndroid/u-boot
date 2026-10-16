@@ -32,4 +32,4 @@
 	/* Restore FDT address */
 	mov	x0, x9
 2:
-3:	b	reset
+3:

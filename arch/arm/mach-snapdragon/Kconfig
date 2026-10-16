@@ -95,9 +95,12 @@ config QCOM_EL2_GUNYAH_EXIT_SUPPORT
 	  happen before EL register configuration in start.S so that U-Boot can
 	  run properly at EL2.
 
+endchoice
+
 config BOOT0_QCOM_BOOT_CPU
 	bool "boot0.h hook to run U-Boot on a selected CPU"
 	depends on ENABLE_ARM_SOC_BOOT0_HOOK
+	depends on !BOOT0_MSM8916_PSCI_WORKAROUND && !QCOM_BOOT0_SNAGBOOT_MODE
 	help
 	  If U-Boot is entered on a CPU other than QCOM_BOOT_CPU_MPIDR, start
 	  that CPU at the U-Boot entry point with PSCI CPU_ON and turn the
@@ -106,7 +109,9 @@ config BOOT0_QCOM_BOOT_CPU
 	  On QCS8275, a kernel with pointer authentication enabled cannot
 	  bring up the Cortex-A55 cores when booted on a Cortex-A78C.
 
-endchoice
+	  With QCOM_EL2_GUNYAH_EXIT_SUPPORT the switch runs after the Gunyah
+	  exit, so PSCI is served by the secure monitor and the selected CPU
+	  starts at EL2.
 
 config QCOM_BOOT_CPU_MPIDR
 	hex "MPIDR affinity of the CPU to run U-Boot on"
