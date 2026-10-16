@@ -440,7 +440,12 @@ static int qcom_pcie_parse_dt(struct udevice *dev)
 	 * PERST# and the PHY sit either in the controller node
 	 * (perst-gpios, phys) or in the root port node (reset-gpios, phys).
 	 */
-	port = dev_read_first_subnode(dev);
+	dev_for_each_subnode(port, dev) {
+		const char *type = ofnode_read_string(port, "device_type");
+
+		if (type && !strcmp(type, "pci"))
+			break;
+	}
 
 	ret = gpio_request_by_name(dev, "perst-gpios", 0,
 				   &priv->rst_gpio, GPIOD_IS_OUT);
