@@ -583,6 +583,7 @@ struct qmp_pcie_priv {
 	unsigned int clk_count;
 
 	struct clk pipe_clk;
+	struct clk pipediv2_clk;
 
 	struct reset_ctl *resets;
 	unsigned int reset_count;
@@ -1574,6 +1575,8 @@ static int qmp_pcie_power_on(struct phy *phy)
 	qmp_pcie_init_registers(qmp, cfg);
 
 	clk_enable(&qmp->pipe_clk);
+	if (qmp->pipediv2_clk.dev)
+		clk_enable(&qmp->pipediv2_clk);
 
 	if (cfg->has_nocsr_reset)
 		reset_deassert(&qmp->nocsr_reset);
@@ -1600,6 +1603,8 @@ static int qmp_pcie_power_off(struct phy *phy)
 	struct qmp_pcie_priv *qmp = dev_get_priv(phy->dev);
 	const struct qmp_pcie_cfg *cfg = qmp->cfg;
 
+	if (qmp->pipediv2_clk.dev)
+		clk_disable(&qmp->pipediv2_clk);
 	clk_disable(&qmp->pipe_clk);
 
 	/* PHY reset */
@@ -1694,6 +1699,10 @@ static int qmp_pcie_clk_init(struct udevice *dev, struct qmp_pcie_priv *qmp)
 	ret = clk_get_by_name(dev, "pipe", &qmp->pipe_clk);
 	if (ret)
 		dev_warn(dev, "failed to get pipe clock\n");
+
+	/* Optional: only the PHYs with a divided pipe clock have it. */
+	if (clk_get_by_name(dev, "pipediv2", &qmp->pipediv2_clk))
+		qmp->pipediv2_clk.dev = NULL;
 
 	return 0;
 
