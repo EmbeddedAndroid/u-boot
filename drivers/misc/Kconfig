@@ -102,6 +102,16 @@ config QCOM_GENI
 	  for providing a common interface for various peripherals like UART, I2C, SPI,
 	  etc.
 
+config SPL_QCOM_GENI
+	bool "Qualcomm Generic Interface (GENI) driver in SPL"
+	depends on SPL_MISC
+	select SPL_EFI_PARTITION
+	select SPL_PARTITION_TYPE_GUID
+	help
+	  Enable support for Qualcomm GENI and it's peripherals in SPL. GENI is responseible
+	  for providing a common interface for various peripherals like UART, I2C, SPI,
+	  etc.
+
 config QCOM_GENI_MINICORE
 	bool "Support minicores in Qualcomm Generic Interface (GENI) driver"
 	depends on QCOM_GENI
