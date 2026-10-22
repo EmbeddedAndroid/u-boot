@@ -526,8 +526,14 @@ static int msm_serial_probe(struct udevice *dev)
 	else
 		priv->se = clk;
 
-	/* Try enable clock */
-	clk_enable(clk);
+	/*
+	 * Try enable clock. A debug UART was left running by the boot
+	 * firmware, but the registers of any other serial engine stall the
+	 * bus while its clock is off.
+	 */
+	ret = IS_ERR(clk) ? PTR_ERR(clk) : clk_enable(clk);
+	if (ret && ofnode_device_is_compatible(dev_ofnode(dev), "qcom,geni-uart"))
+		return ret;
 
 	/* Check if firmware loading is needed (BT UART) */
 	proto = readl(priv->base + GENI_FW_REVISION_RO);
