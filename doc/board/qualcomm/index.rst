@@ -10,6 +10,7 @@ Qualcomm
    debugging
    dragonboard410c
    dragonwing
+   kaanapali-mtp
    rb3gen2
    rubikpi3
    sm8750
