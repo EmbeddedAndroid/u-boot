@@ -735,6 +735,23 @@ with priority BOOTDEVP_6_NET_BASE, then a quick check is made for global
 bootmeths with that priority or less. If there are any, they run before the new
 bootdev is processed.
 
+A scan by label (`boot_targets` or `bootdev-order`) does not go through the
+priorities in order, so the current priority is the largest priority value (the
+slowest kind of bootdev) that the labels have produced so far. A global
+bootmeth then runs before the first label whose bootdev reaches its priority,
+or at the end of the scan.
+
+The EFI boot manager has the priority BOOTDEVP_6_NET_BASE, so with the default
+ordering the `efi` bootmeth tries the block devices first: a bootflow such as
+`\EFI\BOOT\BOOTAA64.EFI` on one of them boots before `BootOrder` and `BootNext`
+are consulted. Leaving `efi` out of the `bootmeths` ordering, for example
+`extlinux efi_mgr`, lets the boot manager decide unless a bootflow of the
+remaining normal bootmeths is found first. Every normal bootmeth has to come
+before `efi_mgr`: one listed after it runs once, like a global bootmeth, and
+never scans a bootdev. With only global bootmeths the scan starts with them,
+before any bootdev is hunted, so an ESP on a hunted device such as an NVMe drive
+is not seen.
+
 Assuming they are enabled and the iteration sequence runs right to the end, all
 global bootmeths will be used. This is handled by a special case at the end of
 iter_incr(), where it processes amy so-far-unused global bootmeths.
