@@ -1,0 +1,32 @@
+.. SPDX-License-Identifier: GPL-2.0+
+.. sectionauthor:: Tyler Baker <tyler.baker@oss.qualcomm.com>
+
+Qualcomm SM8750 MTP
+===================
+
+The SM8750 MTP is the reference design for the Qualcomm SM8750 SoC. It
+boots from UFS.
+
+On this board U-Boot runs as BL33 of TF-A, with OP-TEE as BL32, instead of
+the vendor UEFI firmware. TF-A loads U-Boot from its FIP and passes it no
+device tree, so U-Boot uses the built-in ``qcom/sm8750-mtp`` device tree.
+
+Building
+--------
+
+Configure with ``qcom_defconfig`` and the ``tfa-optee.config`` fragment, and
+select the device tree on the command line::
+
+  $ make CROSS_COMPILE=aarch64-linux-gnu- O=.output qcom_defconfig tfa-optee.config
+  $ make CROSS_COMPILE=aarch64-linux-gnu- O=.output -j$(nproc) DEVICE_TREE=qcom/sm8750-mtp
+
+Use ``.output/u-boot.bin`` as the BL33 image when building the TF-A FIP.
+Add ``debug-sm8750.config`` for the early debug UART on QUPv3 wrap 1 SE7.
+
+Booting
+-------
+
+U-Boot boots the OS through UEFI from the EFI system partition on UFS.
+The OS device tree gets the ``/firmware/optee`` node from the Snapdragon
+device tree fixups, and cores that are fused off on the part are marked
+``status = "fail"`` in it.
