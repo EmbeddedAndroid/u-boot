@@ -91,6 +91,7 @@ static struct msm_pinctrl_data glymur_data = {
 
 static const struct udevice_id msm_pinctrl_ids[] = {
 	{ .compatible = "qcom,glymur-tlmm", .data = (ulong)&glymur_data },
+	{ .compatible = "qcom,mahua-tlmm", .data = (ulong)&glymur_data },
 	{ /* Sentinel */ }
 };
 
