@@ -177,15 +177,11 @@ void clk_rcg_set_rate(phys_addr_t base, uint32_t cmd_rcgr, int div,
 
 	/* setup src select and divider */
 	cfg  = readl(base + cmd_rcgr + RCG_CFG_REG);
-	cfg &= ~(CFG_SRC_SEL_MASK | CFG_MODE_MASK | CFG_HW_CLK_CTRL_MASK);
+	cfg &= ~(CFG_SRC_SEL_MASK | CFG_MODE_MASK | CFG_HW_CLK_CTRL_MASK |
+		 CFG_SRC_DIV_MASK);
 	cfg |= source & CFG_CLK_SRC_MASK; /* Select clock source */
-
-	/*
-	 * Set the divider; HW permits fraction dividers (+0.5), but
-	 * for simplicity, we will support integers only
-	 */
-	if (div)
-		cfg |= (2 * div - 1) & CFG_SRC_DIV_MASK;
+	/* div is the register encoding (2 * h - 1), as F() builds it */
+	cfg |= div & CFG_SRC_DIV_MASK;
 
 	writel(cfg, base + cmd_rcgr + RCG_CFG_REG); /* Write new clock configuration */
 
