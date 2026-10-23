@@ -570,6 +570,10 @@ static const struct udevice_id tcsrcc_glymur_of_match[] = {
 		.compatible = "qcom,glymur-tcsr",
 		.data = (ulong)&glymur_tcsrcc_data,
 	},
+	{
+		.compatible = "qcom,mahua-tcsr",
+		.data = (ulong)&glymur_tcsrcc_data,
+	},
 	{ }
 };
 
