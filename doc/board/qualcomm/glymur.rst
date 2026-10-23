@@ -1,15 +1,20 @@
 .. SPDX-License-Identifier: GPL-2.0+
 .. sectionauthor:: Tyler Baker <tyler.baker@oss.qualcomm.com>
 
-Qualcomm Glymur CRD
-===================
+Qualcomm Glymur and Mahua CRDs
+==============================
 
 The Glymur CRD is the reference design for the Qualcomm Glymur (SC8480XP)
 SoC. Its operating system drive is an NVMe SSD on PCIe 5 (Gen5 x4).
 
-On this board U-Boot runs as BL33 of TF-A, with OP-TEE as BL32, instead of
+Mahua is a Glymur with two of its three CPU clusters. The Mahua CRD is
+built and booted as the Glymur CRD, with its own device tree
+(``qcom/mahua-crd``); everything below applies to both boards.
+
+On these boards U-Boot runs as BL33 of TF-A, with OP-TEE as BL32, instead of
 the vendor UEFI firmware. TF-A loads U-Boot from its FIP and passes it no
-device tree, so U-Boot uses the built-in ``qcom/glymur-crd`` device tree.
+device tree, so U-Boot uses its built-in device tree (``qcom/glymur-crd`` or
+``qcom/mahua-crd``).
 
 Building
 --------
@@ -19,6 +24,11 @@ Configure with ``qcom_defconfig`` and the ``tfa-optee.config`` and
 
   $ make CROSS_COMPILE=aarch64-linux-gnu- O=.output qcom_defconfig tfa-optee.config glymur-crd.config
   $ make CROSS_COMPILE=aarch64-linux-gnu- O=.output -j$(nproc)
+
+For the Mahua CRD, add the ``mahua-crd.config`` fragment after
+``glymur-crd.config``; it only selects the Mahua CRD device tree::
+
+  $ make CROSS_COMPILE=aarch64-linux-gnu- O=.output qcom_defconfig tfa-optee.config glymur-crd.config mahua-crd.config
 
 Use ``.output/u-boot.bin`` as the BL33 image when building the TF-A FIP.
 
