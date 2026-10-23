@@ -12,8 +12,11 @@
 #include <asm/io.h>
 #include <linux/bug.h>
 #include <linux/bitops.h>
+#include <dt-bindings/clock/qcom,rpmh.h>
 #include <dt-bindings/clock/qcom,x1e80100-gcc.h>
 #include <dt-bindings/clock/qcom,x1e80100-tcsr.h>
+#include <soc/qcom/cmd-db.h>
+#include <soc/qcom/rpmh.h>
 
 #include "clock-qcom.h"
 
@@ -433,4 +436,77 @@ U_BOOT_DRIVER(tcsrcc_x1e80100) = {
 	.priv_auto	= sizeof(struct msm_clk_priv),
 	.probe		= tcsrcc_x1e80100_clk_probe,
 	.flags		= DM_FLAG_PRE_RELOC | DM_FLAG_DEFAULT_PD_CTRL_OFF,
+};
+
+/* RPMh clocks */
+
+struct x1e80100_rpmh_clk {
+	const char *res_name;
+	u32 en_offset;
+	u32 on_val;
+};
+
+/* clk_rpmh_bi_tcxo_div2 and clk_rpmh_clk8_a2 in clk-rpmh.c: xo_board / 2 */
+static const struct x1e80100_rpmh_clk x1e80100_rpmh_clks[] = {
+	[RPMH_CXO_CLK]		= { "xo.lvl", 0x0, 0x3 },
+	[RPMH_LN_BB_CLK3]	= { "clka8", 0x4, 0x1 },
+};
+
+static const struct x1e80100_rpmh_clk *x1e80100_rpmh_clk(struct clk *clk)
+{
+	if (clk->id >= ARRAY_SIZE(x1e80100_rpmh_clks) ||
+	    !x1e80100_rpmh_clks[clk->id].res_name)
+		return NULL;
+
+	return &x1e80100_rpmh_clks[clk->id];
+}
+
+static int x1e80100_rpmh_clk_enable(struct clk *clk)
+{
+	const struct x1e80100_rpmh_clk *c = x1e80100_rpmh_clk(clk);
+	struct tcs_cmd cmd = { 0 };
+	u32 addr;
+
+	/* The other RPMh clocks have no U-Boot user and stay as left */
+	if (!c)
+		return 0;
+
+	addr = cmd_db_read_addr(c->res_name);
+	if (!addr)
+		return -ENODEV;
+
+	cmd.addr = addr + c->en_offset;
+	cmd.data = c->on_val;
+
+	return rpmh_write(clk->dev, RPMH_ACTIVE_ONLY_STATE, &cmd, 1);
+}
+
+/* Keep the votes: the OS takes over the clocks still running */
+static int x1e80100_rpmh_clk_disable(struct clk *clk)
+{
+	return 0;
+}
+
+static ulong x1e80100_rpmh_clk_get_rate(struct clk *clk)
+{
+	return x1e80100_rpmh_clk(clk) ? TCXO_RATE : 0;
+}
+
+static struct clk_ops x1e80100_rpmh_clk_ops = {
+	.enable = x1e80100_rpmh_clk_enable,
+	.disable = x1e80100_rpmh_clk_disable,
+	.get_rate = x1e80100_rpmh_clk_get_rate,
+};
+
+static const struct udevice_id x1e80100_rpmh_clk_ids[] = {
+	{ .compatible = "qcom,x1e80100-rpmh-clk" },
+	{ }
+};
+
+U_BOOT_DRIVER(x1e80100_rpmh_clk) = {
+	.name		= "x1e80100_rpmh_clk",
+	.id		= UCLASS_CLK,
+	.of_match	= x1e80100_rpmh_clk_ids,
+	.ops		= &x1e80100_rpmh_clk_ops,
+	.flags		= DM_FLAG_DEFAULT_PD_CTRL_OFF,
 };
