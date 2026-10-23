@@ -126,6 +126,7 @@ struct qcom_snps_eusb2_phy_priv {
 	void __iomem *base;
 	struct clk *ref_clk;
 	struct reset_ctl_bulk resets;
+	struct phy repeater;
 };
 
 static void qcom_snps_eusb2_hsphy_write_mask(void __iomem *base, u32 offset,
@@ -295,7 +296,9 @@ static int qcom_snps_eusb2_phy_power_on(struct phy *phy)
 	struct qcom_snps_eusb2_phy_priv *qcom_snps_eusb2 = dev_get_priv(phy->dev);
 	int ret;
 
-	/* TODO Repeater */
+	ret = generic_phy_init(&qcom_snps_eusb2->repeater);
+	if (ret)
+		return ret;
 
 	clk_prepare_enable(qcom_snps_eusb2->ref_clk);
 
@@ -317,7 +320,7 @@ static int qcom_snps_eusb2_phy_power_off(struct phy *phy)
 	reset_assert_bulk(&qcom_snps_eusb2->resets);
 	clk_disable_unprepare(qcom_snps_eusb2->ref_clk);
 
-	return 0;
+	return generic_phy_exit(&qcom_snps_eusb2->repeater);
 }
 
 static int qcom_snps_eusb2_phy_probe(struct udevice *dev)
@@ -341,6 +344,14 @@ static int qcom_snps_eusb2_phy_probe(struct udevice *dev)
 		printf("failed to get resets, ret = %d\n", ret);
 		return ret;
 	}
+
+	/*
+	 * Some repeaters have no driver or sit on a bus U-Boot cannot reach:
+	 * carry on, relying on an earlier stage having enabled them.
+	 */
+	ret = generic_phy_get_by_index(dev, 0, &qcom_snps_eusb2->repeater);
+	if (ret && ret != -ENOENT)
+		dev_warn(dev, "no repeater (%d), relying on earlier setup\n", ret);
 
 	return 0;
 }
