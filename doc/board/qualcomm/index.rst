@@ -14,6 +14,7 @@ Qualcomm
    rubikpi3
    iq8
    phones
+   purwa
    rdp
    signing
    spl
