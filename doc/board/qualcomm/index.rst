@@ -10,6 +10,7 @@ Qualcomm
    debugging
    dragonboard410c
    dragonwing
+   glymur
    rb3gen2
    rubikpi3
    iq8

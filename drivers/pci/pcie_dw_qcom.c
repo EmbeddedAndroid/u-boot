@@ -22,7 +22,7 @@
 
 struct qcom_pcie;
 
-static const struct qcom_pcie_ops {
+struct qcom_pcie_ops {
 	int (*config_sid)(struct qcom_pcie *priv);
 };
 
@@ -287,7 +287,8 @@ static void qcom_pcie_configure(struct qcom_pcie *priv)
 	val &= ~PORT_LINK_MODE_MASK;
 	writel(val, priv->dw.dbi_base + PCIE_PORT_LINK_CONTROL);
 
-	dw_pcie_link_set_max_link_width(&priv->dw, 2);
+	dw_pcie_link_set_max_link_width(&priv->dw,
+					dev_read_u32_default(priv->dw.dev, "num-lanes", 2));
 
 	dw_pcie_dbi_write_enable(&priv->dw, false);
 }
@@ -415,6 +416,7 @@ static const char *qcom_pcie_vregs[NUM_SUPPLIES] = {
 static int qcom_pcie_parse_dt(struct udevice *dev)
 {
 	struct qcom_pcie *priv = dev_get_priv(dev);
+	ofnode port;
 	int vreg, ret;
 
 	priv->dw.dbi_base = dev_read_addr_name_ptr(dev, "dbi");
@@ -435,10 +437,24 @@ static int qcom_pcie_parse_dt(struct udevice *dev)
 
 	dev_dbg(dev, "PARF address is 0x%p\n", priv->parf);
 
+	/*
+	 * PERST# and the PHY sit either in the controller node
+	 * (perst-gpios, phys) or in the root port node (reset-gpios, phys).
+	 */
+	dev_for_each_subnode(port, dev) {
+		const char *type = ofnode_read_string(port, "device_type");
+
+		if (type && !strcmp(type, "pci"))
+			break;
+	}
+
 	ret = gpio_request_by_name(dev, "perst-gpios", 0,
 				   &priv->rst_gpio, GPIOD_IS_OUT);
+	if (ret && ofnode_valid(port))
+		ret = gpio_request_by_name_nodev(port, "reset-gpios", 0,
+						 &priv->rst_gpio, GPIOD_IS_OUT);
 	if (ret) {
-		dev_err(dev, "failed to find reset-gpios property\n");
+		dev_err(dev, "failed to find perst-gpios or reset-gpios property\n");
 		return ret;
 	}
 
@@ -455,6 +471,8 @@ static int qcom_pcie_parse_dt(struct udevice *dev)
 	}
 
 	ret = generic_phy_get_by_index(dev, 0, &priv->phy);
+	if (ret && ofnode_valid(port))
+		ret = generic_phy_get_by_index_nodev(port, 0, &priv->phy);
 	if (ret) {
 		dev_err(dev, "failed to get pcie phy (%d)\n", ret);
 		return ret;

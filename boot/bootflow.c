@@ -263,6 +263,14 @@ static int prepare_bootdev(struct bootflow_iter *iter, struct udevice *dev,
 {
 	int ret;
 
+	/* labels are not scanned by priority, so take it from the bootdev */
+	if (iter->labels) {
+		struct bootdev_uc_plat *ucp = dev_get_uclass_plat(dev);
+
+		if (ucp->prio > iter->cur_prio)
+			iter->cur_prio = ucp->prio;
+	}
+
 	if (check_global && !next_glob_bootmeth(iter)) {
 		iter->pending_bootdev = dev;
 		iter->pending_method_flags = method_flags;
@@ -558,15 +566,32 @@ int bootflow_scan_first(struct udevice *dev, const char *label,
 	/* Find the first bootmeth (there must be at least one!) */
 	iter->method = iter->method_order[iter->cur_method];
 
+	/*
+	 * A global bootmeth with a priority waits for the bootdevs before it,
+	 * so start with the normal bootmeths if none is ready yet. Without
+	 * any normal bootmeth before the global ones there is nothing to scan
+	 * the bootdevs with, so the scan still starts with the global ones.
+	 */
+	if (IS_ENABLED(CONFIG_BOOTMETH_GLOBAL) && iter->doing_global &&
+	    iter->first_glob_method > 0 && next_glob_bootmeth(iter)) {
+		iter->doing_global = false;
+		iter->cur_method = 0;
+		iter->method = iter->method_order[0];
+	}
+
 	if (!IS_ENABLED(CONFIG_BOOTMETH_GLOBAL) || !iter->doing_global) {
 		struct udevice *dev = NULL;
 		int method_flags;
 
 		ret = bootdev_setup_iter(iter, label, &dev, &method_flags);
-		if (ret)
-			return log_msg_ret("obdev", -ENODEV);
-
-		bootflow_iter_set_dev(iter, dev, method_flags);
+		if (!ret)
+			ret = prepare_bootdev(iter, dev, method_flags, true);
+		if (ret) {
+			/* with no bootdevs, the waiting global bootmeths run */
+			iter->cur_prio = BOOTDEVP_COUNT;
+			if (next_glob_bootmeth(iter))
+				return log_msg_ret("obdev", -ENODEV);
+		}
 	}
 
 	if (IS_ENABLED(CONFIG_BOOTMETH_GLOBAL)) {

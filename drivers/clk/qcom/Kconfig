@@ -182,6 +182,15 @@ config CLK_QCOM_SC7280
 	  on the Snapdragon SC7280 SoC. This driver supports the clocks
 	  and resets exposed by the GCC hardware block.
 
+config CLK_QCOM_GLYMUR
+	bool "Qualcomm Glymur GCC"
+	default y if PINCTRL_QCOM_GENERIC
+	select CLK_QCOM
+	help
+	  Say Y here to enable support for the Global Clock Controller
+	  on the Qualcomm Glymur (SC8480XP) SoC. This driver supports the
+	  clocks, resets and power domains exposed by the GCC hardware block.
+
 config CLK_QCOM_X1E80100
 	bool "Qualcomm X1E80100 GCC"
 	select CLK_QCOM
