@@ -17,6 +17,7 @@ Qualcomm
    sm8750
    iq8
    phones
+   purwa
    rdp
    signing
    spl

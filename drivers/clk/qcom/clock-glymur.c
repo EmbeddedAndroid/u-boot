@@ -67,8 +67,7 @@ static ulong glymur_set_rate(struct clk *clk, ulong rate)
 		return freq->freq;
 	case GCC_PCIE_5_PHY_RCHNG_CLK:
 		freq = qcom_find_freq(ftbl_gcc_pcie_phy_rchng_clk_src, rate);
-		/* clk_rcg_set_rate() takes the plain divider, the table holds 2 * div - 1 */
-		clk_rcg_set_rate(priv->base, 0xc3084, (freq->pre_div + 1) / 2, freq->src);
+		clk_rcg_set_rate(priv->base, 0xc3084, freq->pre_div, freq->src);
 		return freq->freq;
 	default:
 		return 0;

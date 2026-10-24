@@ -30,6 +30,11 @@ F:	drivers/iommu/arm-smmu-v3.c
 N:	glymur
 N:	mahua
 
+QUALCOMM PURWA
+M:	Tyler Baker <tyler.baker@oss.qualcomm.com>
+S:	Maintained
+N:	purwa
+
 QUALCOMM SM8750
 M:	Tyler Baker <tyler.baker@oss.qualcomm.com>
 S:	Maintained

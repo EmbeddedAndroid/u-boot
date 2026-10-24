@@ -12,8 +12,11 @@
 #include <asm/io.h>
 #include <linux/bug.h>
 #include <linux/bitops.h>
+#include <dt-bindings/clock/qcom,rpmh.h>
 #include <dt-bindings/clock/qcom,x1e80100-gcc.h>
 #include <dt-bindings/clock/qcom,x1e80100-tcsr.h>
+#include <soc/qcom/cmd-db.h>
+#include <soc/qcom/rpmh.h>
 
 #include "clock-qcom.h"
 
@@ -35,6 +38,21 @@ static const struct freq_tbl ftbl_gcc_qupv3_wrap0_s4_clk_src[] = {
 	F(80000000, CFG_CLK_SRC_GPLL0_EVEN, 1, 4, 15),
 	F(96000000, CFG_CLK_SRC_GPLL0_EVEN, 1, 8, 25),
 	F(100000000, CFG_CLK_SRC_GPLL0, 6, 0, 0),
+	{ }
+};
+
+static const struct freq_tbl ftbl_gcc_ufs_phy_axi_clk_src[] = {
+	F(25000000, CFG_CLK_SRC_GPLL0_EVEN, 12, 0, 0),
+	F(75000000, CFG_CLK_SRC_GPLL0_EVEN, 4, 0, 0),
+	F(150000000, CFG_CLK_SRC_GPLL0, 4, 0, 0),
+	F(300000000, CFG_CLK_SRC_GPLL0, 2, 0, 0),
+	{ }
+};
+
+static const struct freq_tbl ftbl_gcc_ufs_phy_unipro_core_clk_src[] = {
+	F(75000000, CFG_CLK_SRC_GPLL0_EVEN, 4, 0, 0),
+	F(150000000, CFG_CLK_SRC_GPLL0, 4, 0, 0),
+	F(300000000, CFG_CLK_SRC_GPLL0, 2, 0, 0),
 	{ }
 };
 
@@ -106,6 +124,15 @@ static ulong x1e80100_set_rate(struct clk *clk, ulong rate)
 		freq = qcom_find_freq(ftbl_gcc_pcie_0_phy_rchng_clk_src, rate);
 		clk_rcg_set_rate(priv->base, 0x31070, freq->pre_div, freq->src);
 		return freq->freq;
+	case GCC_UFS_PHY_AXI_CLK:
+		freq = qcom_find_freq(ftbl_gcc_ufs_phy_axi_clk_src, rate);
+		clk_rcg_set_rate_mnd(priv->base, 0x77030,
+				     freq->pre_div, freq->m, freq->n, freq->src, 8);
+		return freq->freq;
+	case GCC_UFS_PHY_UNIPRO_CORE_CLK:
+		freq = qcom_find_freq(ftbl_gcc_ufs_phy_unipro_core_clk_src, rate);
+		clk_rcg_set_rate(priv->base, 0x77098, freq->pre_div, freq->src);
+		return freq->freq;
 	default:
 		return 0;
 	}
@@ -128,8 +155,10 @@ static const struct gate_clk x1e80100_clks[] = {
 	GATE_CLK(GCC_PCIE_6A_AUX_CLK,			0x52018, BIT(24)),
 	GATE_CLK(GCC_PCIE_6A_CFG_AHB_CLK,		0x52018, BIT(23)),
 	GATE_CLK(GCC_PCIE_6A_MSTR_AXI_CLK,		0x52018, BIT(22)),
+	GATE_CLK(GCC_PCIE_6A_PHY_AUX_CLK,		0x52018, BIT(25)),
 	GATE_CLK(GCC_PCIE_6A_PHY_RCHNG_CLK,		0x52018, BIT(27)),
 	GATE_CLK(GCC_PCIE_6A_PIPE_CLK,			0x52018, BIT(26)),
+	GATE_CLK(GCC_PCIE_6A_PIPEDIV2_CLK,		0x52018, BIT(28)),
 	GATE_CLK(GCC_PCIE_6A_SLV_AXI_CLK,		0x52018, BIT(21)),
 	GATE_CLK(GCC_PCIE_6A_SLV_Q2A_AXI_CLK,		0x52018, BIT(20)),
 	GATE_CLK(GCC_QUPV3_WRAP2_CORE_2X_CLK,		0x52010, BIT(3)),
@@ -144,6 +173,16 @@ static const struct gate_clk x1e80100_clks[] = {
 	GATE_CLK(GCC_QUPV3_WRAP2_S7_CLK,		0x52010, BIT(17)),
 	GATE_CLK(GCC_QUPV3_WRAP_2_M_AHB_CLK,		0x52010, BIT(2)),
 	GATE_CLK(GCC_QUPV3_WRAP_2_S_AHB_CLK,		0x52010, BIT(1)),
+	GATE_CLK(GCC_SDCC2_AHB_CLK,			0x14010, BIT(0)),
+	GATE_CLK(GCC_SDCC2_APPS_CLK,			0x14004, BIT(0)),
+	GATE_CLK(GCC_UFS_PHY_AHB_CLK,			0x77024, BIT(0)),
+	GATE_CLK(GCC_UFS_PHY_AXI_CLK,			0x77018, BIT(0)),
+	GATE_CLK(GCC_UFS_PHY_ICE_CORE_CLK,		0x77074, BIT(0)),
+	GATE_CLK(GCC_UFS_PHY_PHY_AUX_CLK,		0x770b0, BIT(0)),
+	GATE_CLK(GCC_UFS_PHY_RX_SYMBOL_0_CLK,		0x7702c, BIT(0)),
+	GATE_CLK(GCC_UFS_PHY_RX_SYMBOL_1_CLK,		0x770cc, BIT(0)),
+	GATE_CLK(GCC_UFS_PHY_TX_SYMBOL_0_CLK,		0x77028, BIT(0)),
+	GATE_CLK(GCC_UFS_PHY_UNIPRO_CORE_CLK,		0x77068, BIT(0)),
 	GATE_CLK(GCC_USB30_PRIM_MASTER_CLK,		0x39018, BIT(0)),
 	GATE_CLK(GCC_USB30_PRIM_MOCK_UTMI_CLK,		0x39028, BIT(0)),
 	GATE_CLK(GCC_USB30_PRIM_SLEEP_CLK,		0x39024, BIT(0)),
@@ -397,4 +436,77 @@ U_BOOT_DRIVER(tcsrcc_x1e80100) = {
 	.priv_auto	= sizeof(struct msm_clk_priv),
 	.probe		= tcsrcc_x1e80100_clk_probe,
 	.flags		= DM_FLAG_PRE_RELOC | DM_FLAG_DEFAULT_PD_CTRL_OFF,
+};
+
+/* RPMh clocks */
+
+struct x1e80100_rpmh_clk {
+	const char *res_name;
+	u32 en_offset;
+	u32 on_val;
+};
+
+/* clk_rpmh_bi_tcxo_div2 and clk_rpmh_clk8_a2 in clk-rpmh.c: xo_board / 2 */
+static const struct x1e80100_rpmh_clk x1e80100_rpmh_clks[] = {
+	[RPMH_CXO_CLK]		= { "xo.lvl", 0x0, 0x3 },
+	[RPMH_LN_BB_CLK3]	= { "clka8", 0x4, 0x1 },
+};
+
+static const struct x1e80100_rpmh_clk *x1e80100_rpmh_clk(struct clk *clk)
+{
+	if (clk->id >= ARRAY_SIZE(x1e80100_rpmh_clks) ||
+	    !x1e80100_rpmh_clks[clk->id].res_name)
+		return NULL;
+
+	return &x1e80100_rpmh_clks[clk->id];
+}
+
+static int x1e80100_rpmh_clk_enable(struct clk *clk)
+{
+	const struct x1e80100_rpmh_clk *c = x1e80100_rpmh_clk(clk);
+	struct tcs_cmd cmd = { 0 };
+	u32 addr;
+
+	/* The other RPMh clocks have no U-Boot user and stay as left */
+	if (!c)
+		return 0;
+
+	addr = cmd_db_read_addr(c->res_name);
+	if (!addr)
+		return -ENODEV;
+
+	cmd.addr = addr + c->en_offset;
+	cmd.data = c->on_val;
+
+	return rpmh_write(clk->dev, RPMH_ACTIVE_ONLY_STATE, &cmd, 1);
+}
+
+/* Keep the votes: the OS takes over the clocks still running */
+static int x1e80100_rpmh_clk_disable(struct clk *clk)
+{
+	return 0;
+}
+
+static ulong x1e80100_rpmh_clk_get_rate(struct clk *clk)
+{
+	return x1e80100_rpmh_clk(clk) ? TCXO_RATE : 0;
+}
+
+static struct clk_ops x1e80100_rpmh_clk_ops = {
+	.enable = x1e80100_rpmh_clk_enable,
+	.disable = x1e80100_rpmh_clk_disable,
+	.get_rate = x1e80100_rpmh_clk_get_rate,
+};
+
+static const struct udevice_id x1e80100_rpmh_clk_ids[] = {
+	{ .compatible = "qcom,x1e80100-rpmh-clk" },
+	{ }
+};
+
+U_BOOT_DRIVER(x1e80100_rpmh_clk) = {
+	.name		= "x1e80100_rpmh_clk",
+	.id		= UCLASS_CLK,
+	.of_match	= x1e80100_rpmh_clk_ids,
+	.ops		= &x1e80100_rpmh_clk_ops,
+	.flags		= DM_FLAG_DEFAULT_PD_CTRL_OFF,
 };

@@ -211,6 +211,7 @@ config CLK_QCOM_GLYMUR
 
 config CLK_QCOM_X1E80100
 	bool "Qualcomm X1E80100 GCC"
+	depends on QCOM_RPMH
 	select CLK_QCOM
 	help
 	  Say Y here to enable support for the Global Clock Controller
