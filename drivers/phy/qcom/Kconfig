@@ -47,6 +47,16 @@ config PHY_QCOM_USB_SNPS_FEMTO_V2
 	  High-Speed PHY driver. This driver supports the Hi-Speed PHY which
 	  is usually paired with Synopsys DWC3 USB IPs on MSM SOCs.
 
+config PHY_QCOM_EUSB2_REPEATER
+	bool "Qualcomm PMIC eUSB2 repeater"
+	depends on PHY && PMIC_QCOM
+	default PHY_QCOM_SNPS_EUSB2
+	help
+	  Enable this to support the eUSB2 repeater found in Qualcomm PMICs
+	  such as PM8550B. The repeater converts the eUSB2 signalling of the
+	  SoC PHY to USB 2.0 levels; without it no USB 2.0 link comes up when
+	  no earlier boot stage has enabled the repeater.
+
 config PHY_QCOM_SNPS_EUSB2
 	bool "Qualcomm Synopsys eUSB2 High-Speed PHY"
 	depends on PHY && ARCH_SNAPDRAGON
