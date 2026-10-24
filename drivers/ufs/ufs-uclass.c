@@ -1687,11 +1687,13 @@ static int ufs_scsi_exec(struct udevice *scsi_dev, struct scsi_cmd *pccb)
 	ufshcd_prepare_utp_scsi_cmd_upiu(hba, pccb, upiu_flags);
 	prepare_prdt_table(hba, pccb);
 
-	ufshcd_cache_flush(pccb->pdata, pccb->datalen);
+	if (pccb->datalen)
+		ufshcd_cache_flush(pccb->pdata, pccb->datalen);
 
 	ufshcd_send_command(hba, TASK_TAG);
 
-	ufshcd_cache_invalidate(pccb->pdata, pccb->datalen);
+	if (pccb->datalen)
+		ufshcd_cache_invalidate(pccb->pdata, pccb->datalen);
 
 	ocs = ufshcd_get_tr_ocs(hba);
 	switch (ocs) {
