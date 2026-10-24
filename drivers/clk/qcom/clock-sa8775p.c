@@ -206,6 +206,14 @@ static const struct gate_clk sa8775p_clks[] = {
 	/* EDP reference clock (used by UFS PHY) */
 	GATE_CLK_POLLED(GCC_EDP_REF_CLKREF_EN, 0x97448, BIT(0), 0x97448),
 
+	/* EMAC0 clocks */
+	GATE_CLK(GCC_EMAC0_AXI_CLK, 0xb6018, 1),
+	GATE_CLK(GCC_EMAC0_PHY_AUX_CLK, 0xb6024, 1),
+	GATE_CLK(GCC_EMAC0_PTP_CLK, 0xb6040, 1),
+	GATE_CLK(GCC_EMAC0_RGMII_CLK, 0xb6044, 1),
+	GATE_CLK(GCC_EMAC0_SLV_AHB_CLK, 0xb6020, 1),
+	GATE_CLK(GCC_SGMI_CLKREF_EN, 0x9c034, 1),
+
 	/* SDCC1 clocks */
 	GATE_CLK_POLLED(GCC_SDCC1_AHB_CLK, 0x2000c, BIT(0), 0x2000c),
 	GATE_CLK_POLLED(GCC_SDCC1_APPS_CLK, 0x20004, BIT(0), 0x20004),
@@ -283,6 +291,7 @@ static const struct qcom_reset_map sa8775p_gcc_resets[] = {
 };
 
 static const struct qcom_power_map sa8775p_gdscs[] = {
+	[EMAC0_GDSC] = { 0xb6004 },
 	[UFS_PHY_GDSC] = { 0x83004 },
 	[USB30_PRIM_GDSC] = { 0x1B004 },
 };

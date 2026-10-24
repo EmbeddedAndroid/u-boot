@@ -39,6 +39,14 @@ config PHY_QCOM_QUSB2
 	  Enable this to support the Super-Speed USB transceiver on various
 	  Qualcomm chipsets.
 
+config PHY_QCOM_SGMII_ETH
+	bool "Qualcomm DWMAC SGMII SerDes PHY driver"
+	depends on PHY && ARCH_SNAPDRAGON
+	help
+	  Enable this to support the SGMII SerDes PHY of the Ethernet MACs on
+	  SA8775P and QCS8300. It runs at 1.25 Gbps for SGMII and 1000BASE-X
+	  and at 3.125 Gbps for 2500BASE-X.
+
 config PHY_QCOM_USB_SNPS_FEMTO_V2
 	bool "Qualcomm SNPS FEMTO USB HS PHY v2"
 	depends on PHY && ARCH_SNAPDRAGON

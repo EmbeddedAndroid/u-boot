@@ -376,6 +376,10 @@ int qcom_geni_load_firmware(phys_addr_t qup_base,
 
 	/* The firmware blob is the private data of the GENI wrapper (parent) */
 	fw = dev_get_priv(dev->parent);
+	if (!fw) {
+		dev_dbg(dev, "QUP firmware not loaded yet\n");
+		return -EAGAIN;
+	}
 
 	ret = read_elf(&rsc, fw, &hdr);
 	if (ret) {
