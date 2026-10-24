@@ -13,6 +13,7 @@ Qualcomm
    rb3gen2
    rubikpi3
    iq8
+   ventuno-q
    phones
    rdp
    signing
