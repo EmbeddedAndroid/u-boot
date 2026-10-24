@@ -16,6 +16,7 @@ Qualcomm
    rubikpi3
    sm8750
    iq8
+   uno-q
    ventuno-q
    phones
    purwa

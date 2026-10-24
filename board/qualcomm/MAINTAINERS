@@ -1,6 +1,13 @@
 # This MAINTAINERS file is for folks with an interest in a particular platform
 # or board under ARM SNAPDRAGON
 
+ARDUINO UNO Q
+M:	Tyler Baker <tyler.baker@oss.qualcomm.com>
+S:	Maintained
+F:	arch/arm/dts/qrb2210-arduino-imola-u-boot.dtsi
+F:	board/qualcomm/arduino-uno-q.config
+F:	doc/board/qualcomm/uno-q.rst
+
 ARDUINO VENTUNO Q
 M:	Tyler Baker <tyler.baker@oss.qualcomm.com>
 S:	Maintained
