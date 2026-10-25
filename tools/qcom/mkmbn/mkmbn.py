@@ -76,6 +76,7 @@ boards: dict[bytes, MbnData] = {
     b"qcom,qcs9100-ride-r3\0": MbnData(0xAF000000, 6, SwId.uefi),  # Dragonwing IQ9
     b"qcom,qcs8300-ride\0": MbnData(0xAF000000, 6, SwId.uefi),  # Dragonwing IQ8
     b"qcom,qcs615-ride\0": MbnData(0x9FC00000, 6, SwId.uefi),  # Dragonwing IQ6
+    b"qcom,shikra-iqs-evk\0": MbnData(0x9F400000, 6, SwId.uefi),  # Dragonwing IQ2
     # Fallback/generic matches since most boards for a platform will
     # use the same load address
     b"qcom,qcm6490\0": MbnData(0x9FC00000, 6, SwId.uefi),  # rb3gen2, rubikpi3
@@ -87,6 +88,7 @@ boards: dict[bytes, MbnData] = {
     b"qcom,qcs615\0": MbnData(0x9FC00000, 6, SwId.uefi),  # Dragonwing IQ6
     b"qcom,ipq5424\0": MbnData(0x8a380000, 6, SwId.aboot),
     b"qcom,ipq9574\0": MbnData(0x4A240000, 6, SwId.aboot),
+    b"qcom,shikra\0": MbnData(0x9F400000, 6, SwId.uefi),  # Dragonwing IQ2
 
     # msm8916/apq8016 has an "aboot" partition but the process is the same
     # They use header version 3.

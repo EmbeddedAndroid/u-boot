@@ -5,13 +5,14 @@ Qualcomm DragonWing
 ========================================
 
 Qualcomm DragonWing are industrial-grade boards that provides various series of processors
-such as IQ6 (QCS615), IQ8 (QCS8300), IQ9 (QCS9100) and Q8 (QCS8550). These SoCs are used
-for factory/industry based applications. Note that the QCS8550 is a derivative of the
+such as IQ2 (Shikra IQS), IQ6 (QCS615), IQ8 (QCS8300), IQ9 (QCS9100) and Q8 (QCS8550). These SoCs
+are used for factory/industry based applications. Note that the QCS8550 is a derivative of the
 SM8550 with the RF modem removed, so the SM8550 defconfig works for both the SM8550 and
 the QCS8550.
-More information can be found on the `Qualcomm's IQ6 product page`_,
+More information can be found on the `Qualcomm's IQ2 product page`_, `Qualcomm's IQ6 product page`_,
 `Qualcomm's IQ8 product page`_, `Qualcomm's IQ9 product page`_ and `Qualcomm's Q8 product page`_.
 
+.. _Qualcomm's IQ2 product page: https://www.qualcomm.com/internet-of-things/products/iq2-series/iq-2390
 .. _Qualcomm's IQ6 product page: https://docs.qualcomm.com/bundle/publicresource/87-83838-1_REV_A_Qualcomm_IQ6_Series_Product_Brief.pdf
 .. _Qualcomm's IQ8 product page: https://docs.qualcomm.com/bundle/publicresource/87-83839-1_REV_A_Qualcomm_IQ8_Series_Product_Brief________.pdf
 .. _Qualcomm's IQ9 product page: https://docs.qualcomm.com/bundle/publicresource/87-83840-1_REV_A_Qualcomm_IQ9_Series_Product_Brief.pdf
@@ -19,7 +20,7 @@ More information can be found on the `Qualcomm's IQ6 product page`_,
 
 Installation
 ------------
-First, setup ``CROSS_COMPILE`` for aarch64. Then, build U-Boot for ``QCS615``, ``QCS8300``, ``QCS9100`` or ``SM8550``::
+First, setup ``CROSS_COMPILE`` for aarch64. Then, build U-Boot for ``Shikra IQS``, ``QCS615``, ``QCS8300``, ``QCS9100`` or ``SM8550``::
 
   $ export CROSS_COMPILE=<aarch64 toolchain prefix>
   $ make qcom_qcs8300_defconfig
