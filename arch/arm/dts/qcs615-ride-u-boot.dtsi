@@ -12,3 +12,7 @@
 		      <0x1 0x80000000 0x1 0x00000000>;
 	};
 };
+
+&vreg_l17a {
+	regulator-always-on;
+};
