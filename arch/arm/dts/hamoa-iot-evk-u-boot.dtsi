@@ -1,0 +1,73 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ */
+
+/ {
+	reserved-memory {
+		hyp-elf-package@80800000 {
+			reg = <0x0 0x80800000 0x0 0x200000>;
+			no-map;
+		};
+
+		ncc@80a00000 {
+			reg = <0x0 0x80a00000 0x0 0x400000>;
+			no-map;
+		};
+
+		xbl-dtlog@81a00000 {
+			reg = <0x0 0x81a00000 0x0 0x40000>;
+			no-map;
+		};
+
+		pdp-ns-shared@81e00000 {
+			reg = <0x0 0x81e00000 0x0 0x100000>;
+			no-map;
+		};
+
+		gpu-prr@81f00000 {
+			reg = <0x0 0x81f00000 0x0 0x10000>;
+			no-map;
+		};
+
+		tpm-control@81f10000 {
+			reg = <0x0 0x81f10000 0x0 0x10000>;
+			no-map;
+		};
+
+		usb-ucsi-shared@81f20000 {
+			reg = <0x0 0x81f20000 0x0 0x10000>;
+			no-map;
+		};
+
+		pld-pep@81f30000 {
+			reg = <0x0 0x81f30000 0x0 0x6000>;
+			no-map;
+		};
+
+		pld-gmu@81f36000 {
+			reg = <0x0 0x81f36000 0x0 0x1000>;
+			no-map;
+		};
+
+		pld-pdp@81f37000 {
+			reg = <0x0 0x81f37000 0x0 0x1000>;
+			no-map;
+		};
+
+		tz-stat@82700000 {
+			reg = <0x0 0x82700000 0x0 0x100000>;
+			no-map;
+		};
+
+		xbl-tmp-buffer@82800000 {
+			reg = <0x0 0x82800000 0x0 0x1c0000>;
+			no-map;
+		};
+
+		xbl-scratch@83f00000 {
+			reg = <0x0 0x83f00000 0x0 0x100000>;
+			no-map;
+		};
+	};
+};
