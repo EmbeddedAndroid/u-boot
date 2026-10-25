@@ -18,6 +18,7 @@
 
 #define pr_fmt(fmt) "of_fixup: " fmt
 
+#include <asm/system.h>
 #include <dt-bindings/input/linux-event-codes.h>
 #include <dm/of_access.h>
 #include <dm/of.h>
@@ -260,6 +261,29 @@ static void add_optee_node(struct device_node *root)
 	}
 }
 
+/*
+ * Qualcomm DTs mark the APSS watchdog "reserved" where Gunyah owns it.
+ * With U-Boot at EL2 there is no hypervisor, and the boot firmware may
+ * have left the watchdog running, so bind it to stop or service it.
+ */
+static void fixup_watchdog_nodes(struct device_node *root)
+{
+	struct device_node *np = root;
+	const char *status;
+
+	if (current_el() != 2)
+		return;
+
+	while ((np = of_find_compatible_node(np, NULL, "qcom,kpss-wdt"))) {
+		status = of_get_property(np, "status", NULL);
+		if (!status || strcmp(status, "reserved"))
+			continue;
+
+		if (of_write_prop(np, "status", sizeof("okay"), "okay"))
+			log_warning("Failed to enable %s\n", np->name);
+	}
+}
+
 #define time_call(func, ...) \
 	do { \
 		u64 start = timer_get_us(); \
@@ -272,6 +296,7 @@ static int qcom_of_fixup_nodes(void * __maybe_unused ctx, struct event *event)
 	struct device_node *root = event->data.of_live_built.root;
 
 	time_call(fixup_usb_nodes, root);
+	time_call(fixup_watchdog_nodes, root);
 
 	if (IS_ENABLED(CONFIG_OPTEE) && is_optee_smc_api())
 		time_call(add_optee_node, root);
