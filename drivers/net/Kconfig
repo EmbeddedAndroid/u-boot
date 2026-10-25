@@ -259,7 +259,8 @@ config DWC_ETH_QOS_QCOM
 	depends on DWC_ETH_QOS
 	help
 	  The Synopsys Designware Ethernet QOS IP block with specific
-	  configuration used in Qcom QCS404 SoC.
+	  configuration used in Qcom QCS404 (RGMII) and SA8775P and QCS8300
+	  (SGMII and 2500BASE-X through the SGMII SerDes PHY) SoCs.
 
 config DWC_ETH_QOS_ROCKCHIP
 	bool "Synopsys DWC Ethernet QOS device support for Rockchip SoCs"

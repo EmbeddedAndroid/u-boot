@@ -48,6 +48,24 @@
 #define AR8021_PHY_ID 0x004dd040
 #define AR8031_PHY_ID 0x004dd074
 #define AR8035_PHY_ID 0x004dd072
+#define QCA8081_PHY_ID 0x004dd101
+
+#define AT803X_SPECIFIC_STATUS		0x11
+#define AT803X_SS_DUPLEX		BIT(13)
+#define AT803X_SS_SPEED_DUPLEX_RESOLVED	BIT(11)
+#define QCA808X_SS_SPEED_MASK		GENMASK(9, 7)
+#define QCA808X_SS_SPEED_10		0
+#define QCA808X_SS_SPEED_100		1
+#define QCA808X_SS_SPEED_1000		2
+#define QCA808X_SS_SPEED_2500		4
+
+/* MMD 7 */
+#define QCA808X_PHY_MMD7_CHIP_TYPE	0x901d
+#define QCA808X_PHY_CHIP_TYPE_1G	BIT(0)
+
+/* MMD 1 of the SerDes, at the PHY address plus one */
+#define QCA8081_PHY_SERDES_MMD1_FIFO_CTRL	0x9072
+#define QCA8081_PHY_FIFO_RSTN		BIT(11)
 
 struct ar803x_priv {
 	int flags;
@@ -332,6 +350,92 @@ static int ar803x_config(struct phy_device *phydev)
 	return 0;
 }
 
+static int qca8081_config(struct phy_device *phydev)
+{
+	bool adv_2500 = phydev->supported & SUPPORTED_2500baseX_Full;
+	int val, changed, ret;
+
+	/* The 1G variant of the chip reports 2.5G in its PMA abilities too */
+	val = phy_read_mmd(phydev, MDIO_MMD_AN, QCA808X_PHY_MMD7_CHIP_TYPE);
+	if (val < 0)
+		return val;
+	if (val & QCA808X_PHY_CHIP_TYPE_1G)
+		adv_2500 = false;
+
+	changed = phy_modify_mmd_changed(phydev, MDIO_MMD_AN,
+					 MDIO_AN_10GBT_CTRL,
+					 MDIO_AN_10GBT_CTRL_ADV2_5G,
+					 adv_2500 ? MDIO_AN_10GBT_CTRL_ADV2_5G : 0);
+	if (changed < 0)
+		return changed;
+
+	ret = genphy_config(phydev);
+	if (ret)
+		return ret;
+
+	if (changed)
+		return genphy_restart_aneg(phydev);
+
+	return 0;
+}
+
+/*
+ * The host interface follows the copper speed: 2500BASE-X at 2.5G, SGMII
+ * below. The FIFO between the PHY and its SerDes is held in reset while
+ * the link is down.
+ */
+static int qca8081_startup(struct phy_device *phydev)
+{
+	struct mii_dev *bus = phydev->bus;
+	int ss, val, ret;
+
+	ret = genphy_update_link(phydev);
+	if (ret)
+		return ret;
+
+	ss = phy_read(phydev, MDIO_DEVAD_NONE, AT803X_SPECIFIC_STATUS);
+	if (ss < 0)
+		return ss;
+
+	if (ss & AT803X_SS_SPEED_DUPLEX_RESOLVED) {
+		switch (FIELD_GET(QCA808X_SS_SPEED_MASK, ss)) {
+		case QCA808X_SS_SPEED_10:
+			phydev->speed = SPEED_10;
+			break;
+		case QCA808X_SS_SPEED_100:
+			phydev->speed = SPEED_100;
+			break;
+		case QCA808X_SS_SPEED_1000:
+			phydev->speed = SPEED_1000;
+			break;
+		case QCA808X_SS_SPEED_2500:
+			phydev->speed = SPEED_2500;
+			break;
+		}
+		phydev->duplex = ss & AT803X_SS_DUPLEX ? DUPLEX_FULL :
+							 DUPLEX_HALF;
+	} else {
+		phydev->link = 0;
+	}
+
+	if (phydev->link)
+		phydev->interface = phydev->speed == SPEED_2500 ?
+				    PHY_INTERFACE_MODE_2500BASEX :
+				    PHY_INTERFACE_MODE_SGMII;
+
+	val = bus->read(bus, phydev->addr + 1, MDIO_MMD_PMAPMD,
+			QCA8081_PHY_SERDES_MMD1_FIFO_CTRL);
+	if (val < 0)
+		return val;
+	if (phydev->link)
+		val |= QCA8081_PHY_FIFO_RSTN;
+	else
+		val &= ~QCA8081_PHY_FIFO_RSTN;
+
+	return bus->write(bus, phydev->addr + 1, MDIO_MMD_PMAPMD,
+			  QCA8081_PHY_SERDES_MMD1_FIFO_CTRL, val);
+}
+
 U_BOOT_PHY_DRIVER(AR8021) = {
 	.name = "AR8021",
 	.uid = AR8021_PHY_ID,
@@ -359,5 +463,15 @@ U_BOOT_PHY_DRIVER(AR8035) = {
 	.features = PHY_GBIT_FEATURES,
 	.config = ar803x_config,
 	.startup = genphy_startup,
+	.shutdown = genphy_shutdown,
+};
+
+U_BOOT_PHY_DRIVER(QCA8081) = {
+	.name = "QCA8081",
+	.uid = QCA8081_PHY_ID,
+	.mask = 0xffffffff,
+	.features = PHY_GBIT_FEATURES | SUPPORTED_2500baseX_Full,
+	.config = qca8081_config,
+	.startup = qca8081_startup,
 	.shutdown = genphy_shutdown,
 };

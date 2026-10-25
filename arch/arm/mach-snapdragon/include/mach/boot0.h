@@ -10,6 +10,8 @@
 #include "msm8916_boot0.h"
 #elif defined(CONFIG_BOOT0_QCOM_BOOT_CPU)
 #include "boot_cpu_boot0.h"
+#elif defined(CONFIG_QCOM_BOOT0_SNAGBOOT_MODE)
+#include "snagboot_boot0.h"
 #else
 	b	reset
 #endif

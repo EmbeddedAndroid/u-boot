@@ -100,4 +100,34 @@ config QCOM_BOOT_CPU_MPIDR
 	help
 	  Aff3..Aff0 fields of the target CPU's MPIDR, set by the board.
 
+config QCOM_BOOT0_SNAGBOOT_MODE
+	bool
+	depends on QCOM_SNAGBOOT_MODE
+
+config QCOM_SNAGBOOT_MODE
+	bool "Build U-Boot for Snagboot mode loading"
+	select QCOM_BOOT0_SNAGBOOT_MODE
+	select ENABLE_ARM_SOC_BOOT0_HOOK
+	select SKIP_RELOCATE
+	select ENV_IS_NOWHERE
+	depends on !ENV_IS_IN_SCSI
+	depends on !PSCI_RESET
+	depends on !SAVE_PREV_BL_INITRAMFS_START_ADDR
+	depends on !BOOT0_QCOM_BOOT_CPU
+	depends on COUNTER_FREQUENCY != 0
+	depends on TEXT_BASE != 0
+	help
+	  Build U-Boot to be loaded in Snagboot mode on Qualcomm platforms
+	  for device/factory provisioning using fastboot.
+
+config QCOM_SNAGBOOT_SPI_NOR_FIXUP
+	bool "Enable spi0-aliased SPI-NOR node for Snagboot mode"
+	depends on QCOM_SNAGBOOT_MODE
+	select OF_BOARD_FIXUP
+	help
+	  Enable the SPI-NOR flash node referenced by the "spi0" alias (and
+	  its parent bus node) when booting in Snagboot mode. Boards that
+	  use a different medium for Snagboot provisioning should leave
+	  this disabled.
+
 endif

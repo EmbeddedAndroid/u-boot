@@ -35,6 +35,9 @@ static void show_psci_version(void)
 {
 	struct arm_smccc_res res;
 
+	if (!IS_ENABLED(CONFIG_ARM_SMCCC))
+		return;
+
 	arm_smccc_smc(ARM_PSCI_0_2_FN_PSCI_VERSION, 0, 0, 0, 0, 0, 0, 0, &res);
 
 	/* Some older SoCs like MSM8916 don't always support PSCI */
@@ -57,6 +60,9 @@ static void qcom_psci_fixup(void *fdt)
 {
 	int offset, ret;
 	struct arm_smccc_res res;
+
+	if (!IS_ENABLED(CONFIG_ARM_SMCCC))
+		return;
 
 	arm_smccc_smc(ARM_PSCI_0_2_FN_PSCI_VERSION, 0, 0, 0, 0, 0, 0, 0, &res);
 
@@ -451,6 +457,27 @@ int board_late_init(void)
 	qcom_show_boot_context();
 	/* Configure the dfu_string for capsule updates */
 	qcom_configure_capsule_updates();
+
+	return 0;
+}
+
+int board_fix_fdt(void *rw_fdt_blob)
+{
+	if (IS_ENABLED(CONFIG_QCOM_SNAGBOOT_SPI_NOR_FIXUP)) {
+		const char *alias;
+		int spi_off, parent_off;
+
+		alias = fdt_get_alias(rw_fdt_blob, "spi0");
+		spi_off = fdt_path_offset(rw_fdt_blob, alias);
+		if (spi_off >= 0) {
+			parent_off = fdt_parent_offset(rw_fdt_blob, spi_off);
+
+			fdt_status_okay(rw_fdt_blob, spi_off);
+
+			if (parent_off >= 0)
+				fdt_status_okay(rw_fdt_blob, parent_off);
+		}
+	}
 
 	return 0;
 }
