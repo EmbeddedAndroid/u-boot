@@ -622,6 +622,71 @@ static int bootflow_efi_mgr_err(struct unit_test_state *uts)
 	return 0;
 }
 BOOTSTD_TEST(bootflow_efi_mgr_err, UTF_DM | UTF_SCAN_PDATA | UTF_SCAN_FDT);
+
+/* Check that a global bootmeth waits for the bootdevs before its priority */
+static int bootflow_scan_glob_prio(struct unit_test_state *uts)
+{
+	struct udevice *bootstd, *dev;
+
+	if (!IS_ENABLED(CONFIG_EFI_BOOTMGR))
+		return -EAGAIN;
+	ut_assertok(uclass_first_device_err(UCLASS_BOOTSTD, &bootstd));
+	ut_assertok(device_bind(bootstd, DM_DRIVER_GET(bootmeth_3efi_mgr),
+				"efi_mgr", 0, ofnode_null(), &dev));
+	ut_assertok(device_probe(dev));
+	sandbox_set_fake_efi_mgr_dev(dev, true);
+
+	ut_assertok(bootstd_test_drop_bootdev_order(uts));
+	ut_assertok(bootmeth_set_order("extlinux efi_mgr"));
+	ut_assertok(run_command("bootflow scan -lH", 0));
+	ut_assert_skip_to_line("Scanning bootdev 'qfw_sandbox.bootdev':");
+	ut_assert_nextline("Scanning global bootmeth 'efi_mgr':");
+	ut_assert_nextlinen("  1  efi_mgr      ready");
+	ut_assert_nextline("Scanning bootdev 'eth@10002000.bootdev':");
+	ut_assert_skip_to_line("(2 bootflows, 2 valid)");
+	ut_assert_console_end();
+
+	/* the same when scanning by label */
+	ut_assertok(env_set("boot_targets", "mmc2 dhcp"));
+	ut_assertok(run_command("bootflow scan -lH", 0));
+	ut_assert_skip_to_line("Scanning bootdev 'mmc2.bootdev':");
+	ut_assert_nextline("Scanning global bootmeth 'efi_mgr':");
+	ut_assert_nextlinen("  0  efi_mgr      ready");
+	ut_assert_nextline("Scanning bootdev 'eth@10002000.bootdev':");
+	ut_assert_skip_to_line("(1 bootflow, 1 valid)");
+	ut_assert_console_end();
+
+	/* and before the first label if that already has its priority */
+	ut_assertok(env_set("boot_targets", "dhcp"));
+	ut_assertok(run_command("bootflow scan -lH", 0));
+	ut_assert_skip_to_line("Scanning global bootmeth 'efi_mgr':");
+	ut_assert_nextlinen("  0  efi_mgr      ready");
+	ut_assert_nextline("Scanning bootdev 'eth@10002000.bootdev':");
+	ut_assert_skip_to_line("(1 bootflow, 1 valid)");
+	ut_assert_console_end();
+
+	/* with no bootdev at all, it still runs */
+	ut_assertok(env_set("boot_targets", "nvme"));
+	ut_assertok(run_command("bootflow scan -lH", 0));
+	ut_assertok(env_set("boot_targets", NULL));
+	ut_assert_skip_to_line("Scanning global bootmeth 'efi_mgr':");
+	ut_assert_nextlinen("  0  efi_mgr      ready");
+	ut_assert_skip_to_line("(1 bootflow, 1 valid)");
+	ut_assert_console_end();
+
+	/* with no normal bootmeth ahead of it, it still starts the scan */
+	ut_assertok(bootmeth_set_order("efi_mgr"));
+	ut_assertok(run_command("bootflow scan -lH", 0));
+	ut_assert_skip_to_line("Scanning global bootmeth 'efi_mgr':");
+	ut_assert_nextlinen("  0  efi_mgr      ready");
+	ut_assert_nextline("Scanning bootdev 'mmc2.bootdev':");
+	ut_assert_skip_to_line("(1 bootflow, 1 valid)");
+	ut_assert_console_end();
+
+	return 0;
+}
+BOOTSTD_TEST(bootflow_scan_glob_prio, UTF_DM | UTF_SCAN_PDATA | UTF_SCAN_FDT |
+	     UTF_CONSOLE | UTF_ETH_BOOTDEV);
 #endif
 
 /* Check disabling a bootmethod if it requests it */

@@ -936,9 +936,14 @@ qcom_smem_enumerate_partitions(struct qcom_smem *smem, u16 local_host)
 		else
 			continue;
 
+		/*
+		 * Newer SoCs share partitions with hosts beyond the ones known
+		 * here (Glymur: host 20). U-Boot never talks to them, so skip
+		 * their partitions instead of giving up on SMEM.
+		 */
 		if (remote_host >= SMEM_HOST_COUNT) {
-			log_err("bad host %u\n", remote_host);
-			return -EINVAL;
+			log_debug("skipping partition of host %u\n", remote_host);
+			continue;
 		}
 
 		if (smem->partitions[remote_host].virt_base) {
