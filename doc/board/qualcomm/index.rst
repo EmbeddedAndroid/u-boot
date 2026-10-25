@@ -11,8 +11,10 @@ Qualcomm
    dragonboard410c
    dragonwing
    glymur
+   kaanapali-mtp
    rb3gen2
    rubikpi3
+   sm8750
    iq8
    phones
    rdp

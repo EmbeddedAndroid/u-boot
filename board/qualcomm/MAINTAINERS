@@ -29,3 +29,8 @@ S:	Maintained
 F:	drivers/iommu/arm-smmu-v3.c
 N:	glymur
 N:	mahua
+
+QUALCOMM SM8750
+M:	Tyler Baker <tyler.baker@oss.qualcomm.com>
+S:	Maintained
+N:	sm8750
