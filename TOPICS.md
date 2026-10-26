@@ -10,6 +10,9 @@ records its conflict resolutions, the ones redone in the refresh under
 "Conflicts (refresh 2026-10-25)". Snapshot of the gated state before the
 refresh: tag qcom/integration-20261024.
 
+Added 2026-10-26: qcom/kailua (SM8550 HDK), merged on top of the gated
+refresh; the state before it is tag qcom/integration-20261025.
+
 ## Platform branches
 
 | platform | branch | on | carries | upstream status |
@@ -24,6 +27,7 @@ refresh: tag qcom/integration-20261024.
 | agatti | qcom/agatti | base | UNO Q board, OP-TEE reservation | not submitted |
 | talos | qcom/talos | base | QCS615 Ride, l17a always on, qcs615 SDCC2 clock, watchdog autostart revert, qcs615 eMMC env v2 | open; our patches not submitted |
 | lanai | qcom/lanai | base | SM8650 QRD | not submitted |
+| kailua | qcom/kailua | lanai | nothing of its own: the Lanai eUSB2 repeater pair covers the SM8550 HDK (build: qcom_defconfig + tfa-optee.config, DEVICE_TREE=qcom/sm8550-hdk) | not submitted |
 | kodiak | qcom/kodiak | base | RB3 Gen 2 fixes, shared RPMh clock driver (monaco v4 1/5) + sc7280 RPMh clocks | open; our fixes not submitted |
 | lemans | qcom/lemans | base | IQ-9075 EVK fixes, watchdog revert, qcs9100 to lemans defconfig v2, QUPv3 W3 SPI clock v3, SPI-NOR node v2, snagboot v9 (8), snagboot SPI-NOR | open; our fixes not submitted |
 | shikra | qcom/shikra | base | Shikra v4 (Aswin, 12) | open |
@@ -286,4 +290,5 @@ job cannot reach it). Jobs: https://lava.infra.foundries.io/scheduler/job/<id>.
 | shikra | public | QCDFP-261025-91 | 512770 | U-Boot only (Shikra v4) on the stock XBL/QSEE/Gunyah health image: FP, Linux, login and the health smoke tests pass as health job 511579; no upstream TF-A/OP-TEE boot path yet |
 | lanai | internal |  |  | untested: no LAVA board |
 | lanai | public |  |  | untested: no LAVA board |
+| kailua | public |  |  | untested: no board yet (lab access pending) |
 | nord | internal |  |  | untested: no LAVA board |
