@@ -557,6 +557,7 @@ static int sdhci_msm_hs400_dll_calibration(struct sdhci_host *host)
 	return sdhci_msm_cm_dll_sdc4_calibration(host);
 }
 
+#if CONFIG_IS_ENABLED(MMC_SUPPORTS_TUNING)
 static int msm_find_most_appropriate_phase(struct sdhci_host *host,
 					   u8 *phase_table,
 					   u8 total_phases)
@@ -619,7 +620,6 @@ static bool sdhci_msm_is_tuning_needed(struct sdhci_host *host)
 	return mmc->selected_mode == MMC_HS_200;
 }
 
-#if CONFIG_IS_ENABLED(MMC_SUPPORTS_TUNING)
 static int sdhci_msm_execute_tuning(struct mmc *mmc, u8 opcode)
 {
 	struct sdhci_host *host = mmc->priv;
