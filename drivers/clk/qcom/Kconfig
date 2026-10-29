@@ -5,6 +5,11 @@ config CLK_QCOM
 	depends on CLK && DM_RESET && POWER_DOMAIN
 	def_bool n
 
+config SPL_CLK_QCOM
+	bool
+	depends on SPL_CLK && SPL_DM_RESET && SPL_POWER_DOMAIN
+	def_bool n
+
 menu "Qualcomm clock drivers"
 
 config CLK_QCOM_APQ8016
@@ -15,6 +20,14 @@ config CLK_QCOM_APQ8016
 	  on the Snapdragon APQ8016 SoC. This driver supports the clocks
 	  and resets exposed by the GCC hardware block.
 
+config SPL_CLK_QCOM_APQ8016
+	bool "Qualcomm APQ8016 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  SPL variant of CLK_QCOM_APQ8016.
+	  See the help of CLK_QCOM_APQ8016 for details.
+
 config CLK_QCOM_APQ8096
 	bool "Qualcomm APQ8096 GCC"
 	select CLK_QCOM
@@ -22,6 +35,14 @@ config CLK_QCOM_APQ8096
 	  Say Y here to enable support for the Global Clock Controller
 	  on the Snapdragon APQ8096 SoC. This driver supports the clocks
 	  and resets exposed by the GCC hardware block.
+
+config SPL_CLK_QCOM_APQ8096
+	bool "Qualcomm APQ8096 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  SPL variant of CLK_QCOM_APQ8096.
+	  See the help of CLK_QCOM_APQ8096 for details.
 
 config CLK_QCOM_IPQ4019
 	bool "Qualcomm IPQ4019 GCC"
@@ -205,6 +226,193 @@ config CLK_QCOM_X1E80100
 	  Say Y here to enable support for the Global Clock Controller
 	  on the Snapdragon X1E80100 SoC. This driver supports the clocks
 	  and resets exposed by the GCC hardware block.
+
+config SPL_CLK_QCOM_IPQ4019
+	bool "Qualcomm IPQ4019 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm IPQ4019 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_IPQ5210
+	bool "Qualcomm IPQ5210 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm IPQ5210 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_IPQ5424
+	bool "Qualcomm IPQ5424 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm IPQ5424 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_IPQ9574
+	bool "Qualcomm IPQ9574 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm IPQ9574 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_MILOS
+	bool "Qualcomm Milos GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm Milos Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_QCM2290
+	bool "Qualcomm QCM2290 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm QCM2290 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_QCS404
+	bool "Qualcomm QCS404 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm QCS404 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_QCS615
+	bool "Qualcomm QCS615 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm QCS615 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_QCS8300
+	bool "Qualcomm QCS8300 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm QCS8300 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_RPMH
+	bool "Qualcomm RPMh clock driver in SPL"
+	depends on SPL_CLK
+	help
+	  Enable the Qualcomm RPMh clock driver in SPL.
+	  This provides RPMh-managed clocks needed during early boot.
+
+config SPL_CLK_QCOM_SA8775P
+	bool "Qualcomm SA8775 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	select SPL_CLK_QCOM_RPMH
+	help
+	  Enable the Qualcomm SA8775P Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_SDM845
+	bool "Qualcomm SDM845 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm SDM845 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_SHIKRA
+	bool "Qualcomm Shikra GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm Shikra Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_SM6115
+	bool "Qualcomm SM6115 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm SM6115 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_SM6125
+	bool "Qualcomm SM6125 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm SM6125 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_SM6350
+	bool "Qualcomm SM6350 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm SM6350 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_SM7150
+	bool "Qualcomm SM7150 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm SM7150 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_SM8150
+	bool "Qualcomm SM8150 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm SM8150 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_SM8250
+	bool "Qualcomm SM8250 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm SM8250 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_SM8550
+	bool "Qualcomm SM8550 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	select SPL_CLK_QCOM_RPMH
+	help
+	  Enable the Qualcomm SM8550 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_SM8650
+	bool "Qualcomm SM8650 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	select SPL_CLK_QCOM_RPMH
+	help
+	  Enable the Qualcomm SM8650 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_SC7280
+	bool "Qualcomm SC7280 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	select SPL_CLK_QCOM_RPMH
+	help
+	  Enable the Qualcomm SC7280 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
+
+config SPL_CLK_QCOM_X1E80100
+	bool "Qualcomm X1E80100 GCC in SPL"
+	depends on SPL_CLK
+	select SPL_CLK_QCOM
+	help
+	  Enable the Qualcomm X1E80100 Global Clock Controller in SPL.
+	  This includes only the clock driver needed during early boot.
 
 endmenu
 
