@@ -141,13 +141,13 @@ u32 spl_mmc_boot_mode(struct mmc *mmc, const u32 boot_device)
  *
  * Return: Partition number to boot from, or default partition on error
  */
-int __weak spl_mmc_boot_partition(const u32 boot_device)
+int __weak spl_mmc_boot_partition(struct mmc *mmc, const u32 boot_device)
 {
 	int p_no;
 	struct blk_desc *desc;
 	struct disk_partition info;
 
-	desc = blk_get_devnum_by_uclass_id(UCLASS_MMC, 0);
+	desc = mmc_get_blk_desc(mmc);
 	if (!desc) {
 		pr_err("%s: Block device not found\n", __func__);
 		return -ENODEV;
