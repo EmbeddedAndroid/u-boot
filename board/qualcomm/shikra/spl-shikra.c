@@ -3,6 +3,7 @@
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 #include <blk.h>
+#include <clk.h>
 #include <cpu_func.h>
 #include <asm/io.h>
 #include <asm/sections.h>
@@ -16,6 +17,7 @@
 #include <malloc.h>
 #include <mach/qclib.h>
 #include <mach/spl.h>
+#include <mmc.h>
 #include <part.h>
 #include <spl.h>
 
@@ -144,8 +146,129 @@ enum {
 };
 
 #if defined(CONFIG_SPL_BUILD)
+/**
+ * shikra_prepare_qup_clocks() - Enable QUP wrapper clocks.
+ *
+ * Enable wrapper clocks before detecting the QUP firmware state.
+ *
+ * Return: 0 on success, or a negative error code.
+ */
+static int shikra_prepare_qup_clocks(void)
+{
+	struct clk_bulk clks;
+	struct uclass *uc;
+	struct udevice *dev;
+	int ret;
+
+	ret = uclass_get(UCLASS_MISC, &uc);
+	if (ret)
+		return ret;
+
+	uclass_foreach_dev(dev, uc) {
+		if (!device_is_compatible(dev, "qcom,geni-se-qup"))
+			continue;
+
+		ret = clk_get_bulk(dev, &clks);
+		if (ret)
+			return ret;
+
+		ret = clk_enable_bulk(&clks);
+		if (ret)
+			clk_release_bulk(&clks);
+
+		return ret;
+	}
+
+	return -ENODEV;
+}
+
+/**
+ * shikra_prepare_mmc() - Initialize the selected MMC boot device.
+ *
+ * Make the boot MMC device available before loading QUP firmware.
+ *
+ * Return: 0 on success, or a negative error code.
+ */
+static int shikra_prepare_mmc(u32 boot_device)
+{
+	struct udevice *dev;
+	struct mmc *mmc;
+	int seq, ret;
+
+	switch (boot_device) {
+	case BOOT_DEVICE_MMC1:
+		seq = 0;
+		break;
+	case BOOT_DEVICE_MMC2:
+		seq = 1;
+		break;
+	default:
+		return -ENODEV;
+	}
+
+	ret = uclass_get_device_by_seq(UCLASS_MMC, seq, &dev);
+	if (ret)
+		return ret;
+
+	mmc = mmc_get_mmc_dev(dev);
+	if (!mmc)
+		return -ENODEV;
+
+	return mmc_init(mmc);
+}
+
+/**
+ * qcom_spl_prepare_qupfw_media() - Prepare media for QUPFW loading.
+ * @boot_device: U-Boot boot-device identifier.
+ *
+ * Prepare media that must be initialized before QUP firmware loading.
+ * Media without an early-preparation requirement are intentionally left as
+ * placeholders and are handled by their SPL image loader later in the flow.
+ *
+ * Return: 0 on success, or a negative error code.
+ */
+static int qcom_spl_prepare_qupfw_media(u32 boot_device)
+{
+	switch (boot_device) {
+	case BOOT_DEVICE_MMC1:
+	case BOOT_DEVICE_MMC2:
+		return shikra_prepare_mmc(boot_device);
+
+	default:
+		return -EOPNOTSUPP;
+	}
+}
+
+/**
+ * shikra_release_qupfw() - Free the QUP firmware buffer.
+ *
+ * Free the dynamic QUPFW buffer before allocating the MMU table.
+ */
+static void shikra_release_qupfw(void)
+{
+#if !IS_ENABLED(CONFIG_QCOM_GENI_MINICORE)
+	struct uclass *uc;
+	struct udevice *dev;
+	void *fw;
+
+	if (uclass_get(UCLASS_MISC, &uc))
+		return;
+
+	uclass_foreach_dev(dev, uc) {
+		if (!device_is_compatible(dev, "qcom,geni-se-qup"))
+			continue;
+
+		fw = dev_get_priv(dev);
+		if (fw)
+			free(fw);
+		return;
+	}
+#endif
+}
+
 void board_init_f(ulong dummy)
 {
+	int boot_device;
 	int ret = 0;
 
 	memset(__bss_start, 0, __bss_end - __bss_start);
@@ -158,7 +281,26 @@ void board_init_f(ulong dummy)
 		goto fail;
 	}
 
+	ret = shikra_prepare_qup_clocks();
+	if (ret) {
+		pr_debug("failed to prepare QUP clocks (%d)\n", ret);
+		goto fail;
+	}
+
+	boot_device = (int)spl_boot_device();
+	if (boot_device < 0) {
+		ret = boot_device;
+		goto fail;
+	}
+
+	ret = qcom_spl_prepare_qupfw_media(boot_device);
+	if (ret) {
+		pr_debug("failed to prepare QUPFW media (%d)\n", ret);
+		goto fail;
+	}
+
 	event_notify_null(EVT_LAST_STAGE_INIT);
+	shikra_release_qupfw();
 
 	preloader_console_init();
 
@@ -172,7 +314,7 @@ void board_init_f(ulong dummy)
 	enable_caches();
 #endif
 
-	ret = qcom_spl_loader_pre_ddr(spl_boot_device());
+	ret = qcom_spl_loader_pre_ddr(boot_device);
 	if (ret) {
 		pr_debug("qcom_spl_loader_pre_ddr() failed (%d)\n", ret);
 		goto fail;
