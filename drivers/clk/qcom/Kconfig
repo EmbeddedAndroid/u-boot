@@ -23,6 +23,16 @@ config CLK_QCOM_APQ8096
 	  on the Snapdragon APQ8096 SoC. This driver supports the clocks
 	  and resets exposed by the GCC hardware block.
 
+config CLK_QCOM_ELIZA
+	bool "Qualcomm Eliza GCC"
+	default y if PINCTRL_QCOM_GENERIC
+	select CLK_QCOM
+	help
+	  Say Y here to enable support for the Global Clock Controller
+	  on the Qualcomm Eliza SoC. This driver supports the clocks,
+	  resets and power domains exposed by the GCC hardware block, and
+	  the TCSR reference clock enables.
+
 config CLK_QCOM_IPQ4019
 	bool "Qualcomm IPQ4019 GCC"
 	select CLK_QCOM
