@@ -22,3 +22,8 @@ QUALCOMM DRAGONWING QCS9100
 M:	Varadarajan Narayanan <quic_varada@quicinc.com>
 S:	Maintained
 N:	qcs9100
+
+QUALCOMM ELIZA
+M:	Tyler Baker <tyler.baker@oss.qualcomm.com>
+S:	Maintained
+N:	eliza
