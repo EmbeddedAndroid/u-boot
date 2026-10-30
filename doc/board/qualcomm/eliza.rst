@@ -27,3 +27,15 @@ Booting
 -------
 
 U-Boot boots the OS through UEFI from the EFI system partition on UFS.
+
+Fastboot
+--------
+
+Add the ``eliza-fastboot.config`` fragment to enter fastboot by holding
+volume down while U-Boot starts::
+
+  $ make CROSS_COMPILE=aarch64-linux-gnu- O=.output qcom_defconfig tfa-optee.config eliza-fastboot.config
+
+``fastboot flash`` writes partitions of UFS LUN0 only. ``fastboot boot``
+boots Android boot images with header versions 0 to 2. ``fastboot oem
+run:<command>`` runs a U-Boot command.

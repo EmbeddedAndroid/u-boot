@@ -3,6 +3,8 @@
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
+#include <dt-bindings/input/linux-event-codes.h>
+
 / {
 	reserved-memory {
 		dare-hyp@81300000 {
@@ -31,4 +33,14 @@
 		clocks = <&sleep_clk>;
 		interrupts = <GIC_SPI 0 IRQ_TYPE_EDGE_RISING>;
 	};
+};
+
+/*
+ * Volume down (PMK8550 PON RESIN), for holding it to enter fastboot.
+ * Carried here until the Linux DT enables it and that reaches
+ * dts/upstream.
+ */
+&pon_resin {
+	linux,code = <KEY_VOLUMEDOWN>;
+	status = "okay";
 };
