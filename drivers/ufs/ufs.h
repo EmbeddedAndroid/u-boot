@@ -360,6 +360,12 @@ struct ufs_dev_desc {
 	char model[MAX_MODEL_LEN + 1];
 };
 
+/* UFS device information, filled in from the device descriptor */
+struct ufs_dev_info {
+	/* wSpecVersion, the UFS specification version (BCD, 0x0310 = 3.1) */
+	u16 wspecversion;
+};
+
 /* Device descriptor parameters offsets in bytes*/
 enum device_desc_param {
 	DEVICE_DESC_PARAM_LEN			= 0x0,
@@ -531,6 +537,8 @@ struct ufs_hba_ops {
 				   enum ufs_notify_change_status);
 	int (*phy_initialization)(struct ufs_hba *hba);
 	int (*device_reset)(struct ufs_hba *hba);
+	/* called once the device descriptor has been read into dev_info */
+	void (*fixup_dev_quirks)(struct ufs_hba *hba);
 };
 
 enum ufshcd_quirks {
@@ -722,6 +730,7 @@ struct ufs_hba {
 	struct ufs_pwr_mode_info max_pwr_info;
 
 	struct ufs_dev_cmd dev_cmd;
+	struct ufs_dev_info dev_info;
 };
 
 static inline int ufshcd_ops_init(struct ufs_hba *hba)
@@ -730,6 +739,12 @@ static inline int ufshcd_ops_init(struct ufs_hba *hba)
 		return hba->ops->init(hba);
 
 	return 0;
+}
+
+static inline void ufshcd_ops_fixup_dev_quirks(struct ufs_hba *hba)
+{
+	if (hba->ops && hba->ops->fixup_dev_quirks)
+		hba->ops->fixup_dev_quirks(hba);
 }
 
 static inline int ufshcd_ops_get_max_pwr_mode(struct ufs_hba *hba,
