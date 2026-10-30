@@ -18,6 +18,7 @@
 #include <interconnect.h>
 #include <power/regulator.h>
 
+#include <linux/bitfield.h>
 #include <linux/bitops.h>
 #include <linux/delay.h>
 #include <linux/err.h>
@@ -623,6 +624,24 @@ static int ufs_qcom_init(struct ufs_hba *hba)
 	return 0;
 }
 
+/*
+ * From controller version 5 the OS takes the UFS device version from the
+ * spare register (major in bits 7:4, minor in bits 3:0) to pick the PHY
+ * gear; while it reads 0 it resets the host and the device once more to
+ * reprogram the PHY after the gear switch.
+ */
+static void ufs_qcom_fixup_dev_quirks(struct ufs_hba *hba)
+{
+	struct ufs_qcom_priv *priv = dev_get_priv(hba->dev);
+
+	if (priv->hw_ver.major < 0x5)
+		return;
+
+	ufshcd_rmwl(hba, UFS_DEV_VER_MASK,
+		    FIELD_PREP(UFS_DEV_VER_MASK, hba->dev_info.wspecversion >> 4),
+		    REG_UFS_DEBUG_SPARE_CFG);
+}
+
 /**
  * ufs_qcom_device_reset() - toggle the (optional) device reset line
  * @hba: per-adapter instance
@@ -655,6 +674,7 @@ static struct ufs_hba_ops ufs_qcom_hba_ops = {
 	.hce_enable_notify	= ufs_qcom_hce_enable_notify,
 	.link_startup_notify	= ufs_qcom_link_startup_notify,
 	.device_reset		= ufs_qcom_device_reset,
+	.fixup_dev_quirks	= ufs_qcom_fixup_dev_quirks,
 };
 
 static int ufs_qcom_probe(struct udevice *dev)
