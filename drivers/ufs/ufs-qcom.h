@@ -43,7 +43,12 @@ enum {
 	UFS_AH8_CFG				= 0xFC,
 
 	REG_UFS_CFG3				= 0x271C,
+
+	REG_UFS_DEBUG_SPARE_CFG			= 0x284C,
 };
+
+/* UFS device version for the OS in REG_UFS_DEBUG_SPARE_CFG */
+#define UFS_DEV_VER_MASK	GENMASK(7, 0)
 
 /* bit definitions for REG_UFS_CFG0 register */
 #define QUNIPRO_G4_SEL		BIT(5)
