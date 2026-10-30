@@ -16,3 +16,19 @@
 		};
 	};
 };
+
+/*
+ * XBL leaves the non-secure APSS watchdog running with a 30 s bite, and
+ * nothing services it until the OS does, so U-Boot hangs about 30 s after
+ * it starts (at a prompt, in fastboot). Describe it so that the qcom_wdt
+ * driver probes and stops it. Once the Linux DT describes the watchdog
+ * (status "reserved"), keep only a status = "okay" override here.
+ */
+&soc {
+	apss_watchdog: watchdog@17410000 {
+		compatible = "qcom,apss-wdt-eliza", "qcom,kpss-wdt";
+		reg = <0x0 0x17410000 0x0 0x1000>;
+		clocks = <&sleep_clk>;
+		interrupts = <GIC_SPI 0 IRQ_TYPE_EDGE_RISING>;
+	};
+};
