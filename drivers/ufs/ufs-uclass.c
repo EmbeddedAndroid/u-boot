@@ -1842,6 +1842,8 @@ static int ufs_get_device_desc(struct ufs_hba *hba,
 	 */
 	dev_desc->wmanufacturerid = desc_buf[DEVICE_DESC_PARAM_MANF_ID] << 8 |
 				     desc_buf[DEVICE_DESC_PARAM_MANF_ID + 1];
+	hba->dev_info.wspecversion = desc_buf[DEVICE_DESC_PARAM_SPEC_VER] << 8 |
+				     desc_buf[DEVICE_DESC_PARAM_SPEC_VER + 1];
 
 	model_index = desc_buf[DEVICE_DESC_PARAM_PRDCT_NAME];
 
@@ -2177,6 +2179,8 @@ static int ufs_start(struct ufs_hba *hba)
 
 		return ret;
 	}
+
+	ufshcd_ops_fixup_dev_quirks(hba);
 
 	ufshcd_set_dev_ref_clk(hba);
 

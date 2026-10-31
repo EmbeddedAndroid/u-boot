@@ -10,6 +10,7 @@ Qualcomm
    debugging
    dragonboard410c
    dragonwing
+   eliza
    glymur
    kaanapali-mtp
    rb3gen2

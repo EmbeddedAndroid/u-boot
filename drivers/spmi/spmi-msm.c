@@ -8,6 +8,7 @@
  */
 
 #include <dm.h>
+#include <dm/lists.h>
 #include <errno.h>
 #include <fdtdec.h>
 #include <asm/io.h>
@@ -22,6 +23,7 @@
 #define PMIC_ARB_VERSION_V3_MIN 0x30000000
 #define PMIC_ARB_VERSION_V5_MIN 0x50000000
 #define PMIC_ARB_VERSION_V7_MIN	0x70000000
+#define PMIC_ARB_VERSION_V8_MIN	0x80000000
 
 #define PMIC_ARB_FEATURES		0x0004
 #define PMIC_ARB_FEATURES_PERIPH_MASK	GENMASK(10, 0)
@@ -58,6 +60,7 @@
 #define SPMI_MAX_CHANNELS 128
 #define SPMI_MAX_CHANNELS_V5	512
 #define SPMI_MAX_CHANNELS_V7	1024
+#define SPMI_MAX_BUSES_V7	2
 #define SPMI_MAX_SLAVES 16
 #define SPMI_MAX_PERIPH 256
 
@@ -88,11 +91,20 @@ struct msm_spmi_priv {
 	phys_addr_t spmi_obs;  /* SPMI observer */
 	phys_addr_t spmi_cnfg;  /* SPMI config */
 	u32 owner;	/* Current owner */
-	unsigned int max_channels; /* Max channels */
+	unsigned int base_apid; /* First APID of this bus */
+	unsigned int max_channels; /* Number of APIDs of this bus */
 	/* SPMI channel map */
 	uint32_t channel_map[SPMI_MAX_SLAVES][SPMI_MAX_PERIPH];
 	/* SPMI bus arbiter version */
 	u32 arb_ver;
+};
+
+/* Arbiter resources shared by the buses of a multi-bus arbiter */
+struct msm_spmi_arb_priv {
+	phys_addr_t core;
+	phys_addr_t spmi_chnls;
+	phys_addr_t spmi_obs;
+	u32 owner;
 };
 
 static u32 pmic_arb_fmt_cmd_v1(u8 opc, u8 sid, u8 pid, u8 off)
@@ -263,7 +275,8 @@ static void msm_spmi_channel_map_v5(struct msm_spmi_priv *priv, unsigned int i,
 				    uint8_t slave_id, uint8_t pid)
 {
 	/* Mark channels read-only when from different owner */
-	uint32_t cnfg = readl(priv->spmi_cnfg + ARB_CHANNEL_OFFSET(i));
+	uint32_t cnfg = readl(priv->spmi_cnfg +
+			      ARB_CHANNEL_OFFSET(i - priv->base_apid));
 	uint8_t owner = SPMI_OWNERSHIP_PERIPH2OWNER(cnfg);
 	bool prev_valid = priv->channel_map[slave_id][pid] & SPMI_CHANNEL_VALID;
 	uint32_t prev_read_only = priv->channel_map[slave_id][pid] & SPMI_CHANNEL_READ_ONLY;
@@ -294,12 +307,34 @@ static void msm_spmi_channel_map_v5(struct msm_spmi_priv *priv, unsigned int i,
 	/* else: Previous was writable and owned by us, this one isn't - keep previous */
 }
 
+static void msm_spmi_scan_channels(struct msm_spmi_priv *priv)
+{
+	unsigned int i;
+
+	for (i = priv->base_apid; i < priv->base_apid + priv->max_channels; i++) {
+		uint32_t periph = readl(priv->arb_chnl + ARB_CHANNEL_OFFSET(i));
+		uint8_t slave_id = (periph & 0xf0000) >> 16;
+		uint8_t pid = (periph & 0xff00) >> 8;
+
+		switch (priv->arb_ver) {
+		case V2:
+		case V3:
+			priv->channel_map[slave_id][pid] = i | SPMI_CHANNEL_VALID;
+			break;
+
+		case V5:
+		case V7:
+			msm_spmi_channel_map_v5(priv, i, slave_id, pid);
+			break;
+		}
+	}
+}
+
 static int msm_spmi_probe(struct udevice *dev)
 {
 	struct msm_spmi_priv *priv = dev_get_priv(dev);
 	phys_addr_t core_addr;
 	u32 hw_ver;
-	int i;
 
 	core_addr = dev_read_addr_name(dev, "core");
 	priv->spmi_chnls = dev_read_addr_name(dev, "chnls");
@@ -344,23 +379,8 @@ static int msm_spmi_probe(struct udevice *dev)
 	dev_dbg(dev, "priv->spmi_chnls address (%#08llx)\n", priv->spmi_chnls);
 	dev_dbg(dev, "priv->spmi_obs address (%#08llx)\n", priv->spmi_obs);
 	/* Scan peripherals connected to each SPMI channel */
-	for (i = 0; i < priv->max_channels; i++) {
-		uint32_t periph = readl(priv->arb_chnl + ARB_CHANNEL_OFFSET(i));
-		uint8_t slave_id = (periph & 0xf0000) >> 16;
-		uint8_t pid = (periph & 0xff00) >> 8;
+	msm_spmi_scan_channels(priv);
 
-		switch (priv->arb_ver) {
-		case V2:
-		case V3:
-			priv->channel_map[slave_id][pid] = i | SPMI_CHANNEL_VALID;
-			break;
-
-		case V5:
-		case V7:
-			msm_spmi_channel_map_v5(priv, i, slave_id, pid);
-			break;
-		}
-	}
 	return 0;
 }
 
@@ -379,6 +399,137 @@ U_BOOT_DRIVER(msm_spmi) = {
 };
 
 /*
+ * Arbiter v7 can drive two SPMI buses. The binding then describes the
+ * arbiter with one child node per bus; each bus owns a contiguous range
+ * of APIDs whose size is given by a per-bus FEATURES register, and its
+ * own APID ownership table in its "cnfg" region.
+ */
+static int msm_spmi_bus_index(struct udevice *dev)
+{
+	ofnode node;
+	int index = 0;
+
+	dev_for_each_subnode(node, dev->parent) {
+		if (!ofnode_is_enabled(node))
+			continue;
+		if (ofnode_equal(node, dev_ofnode(dev)))
+			return index;
+		index++;
+	}
+
+	return -ENODEV;
+}
+
+static int msm_spmi_bus_probe(struct udevice *dev)
+{
+	struct msm_spmi_arb_priv *arb = dev_get_priv(dev->parent);
+	struct msm_spmi_priv *priv = dev_get_priv(dev);
+	unsigned int base_apid = 0, apid_count = 0;
+	u32 hw_ver;
+	int index, i;
+
+	hw_ver = readl(arb->core + PMIC_ARB_VERSION);
+	if (hw_ver < PMIC_ARB_VERSION_V7_MIN ||
+	    hw_ver >= PMIC_ARB_VERSION_V8_MIN) {
+		dev_err(dev, "unsupported PMIC arbiter version %#x\n", hw_ver);
+		return -ENODEV;
+	}
+
+	index = msm_spmi_bus_index(dev);
+	if (index < 0 || index >= SPMI_MAX_BUSES_V7)
+		return -EINVAL;
+
+	for (i = 0; i <= index; i++) {
+		base_apid += apid_count;
+		apid_count = readl(arb->core + PMIC_ARB_FEATURES + 4 * i) &
+			     PMIC_ARB_FEATURES_PERIPH_MASK;
+	}
+
+	if (!apid_count || base_apid + apid_count > SPMI_MAX_CHANNELS_V7) {
+		dev_err(dev, "invalid APID range %u+%u for bus %d\n",
+			base_apid, apid_count, index);
+		return -EINVAL;
+	}
+
+	priv->spmi_cnfg = dev_read_addr_name(dev, "cnfg");
+	if (priv->spmi_cnfg == FDT_ADDR_T_NONE)
+		return -EINVAL;
+
+	priv->arb_ver = V7;
+	priv->arb_chnl = arb->core + APID_MAP_OFFSET_V7;
+	priv->spmi_chnls = arb->spmi_chnls;
+	priv->spmi_obs = arb->spmi_obs;
+	priv->owner = arb->owner;
+	priv->base_apid = base_apid;
+	priv->max_channels = apid_count;
+
+	dev_dbg(dev, "bus %d: APIDs %u..%u\n", index, base_apid,
+		base_apid + apid_count - 1);
+
+	msm_spmi_scan_channels(priv);
+
+	return 0;
+}
+
+U_BOOT_DRIVER(msm_spmi_bus) = {
+	.name = "msm_spmi_bus",
+	.id = UCLASS_SPMI,
+	.ops = &msm_spmi_ops,
+	.probe = msm_spmi_bus_probe,
+	.priv_auto = sizeof(struct msm_spmi_priv),
+};
+
+static int msm_spmi_arb_bind(struct udevice *dev)
+{
+	ofnode node;
+	int ret;
+
+	dev_for_each_subnode(node, dev) {
+		if (!ofnode_is_enabled(node))
+			continue;
+
+		ret = device_bind_driver_to_node(dev, "msm_spmi_bus",
+						 ofnode_get_name(node), node,
+						 NULL);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
+}
+
+static int msm_spmi_arb_probe(struct udevice *dev)
+{
+	struct msm_spmi_arb_priv *priv = dev_get_priv(dev);
+
+	priv->core = dev_read_addr_name(dev, "core");
+	priv->spmi_chnls = dev_read_addr_name(dev, "chnls");
+	priv->spmi_obs = dev_read_addr_name(dev, "obsrvr");
+	dev_read_u32(dev, "qcom,ee", &priv->owner);
+
+	if (priv->core == FDT_ADDR_T_NONE ||
+	    priv->spmi_chnls == FDT_ADDR_T_NONE ||
+	    priv->spmi_obs == FDT_ADDR_T_NONE)
+		return -EINVAL;
+
+	return 0;
+}
+
+static const struct udevice_id msm_spmi_arb_ids[] = {
+	{ .compatible = "qcom,x1e80100-spmi-pmic-arb" },
+	{ }
+};
+
+U_BOOT_DRIVER(msm_spmi_arb) = {
+	.name = "msm_spmi_arb",
+	.id = UCLASS_NOP,
+	.of_match = msm_spmi_arb_ids,
+	.bind = msm_spmi_arb_bind,
+	.probe = msm_spmi_arb_probe,
+	.priv_auto = sizeof(struct msm_spmi_arb_priv),
+};
+
+/*
  * PMIC arbiter v8 (Glymur): one arbiter node ("core", "chnls", "obsrvr",
  * "chnl_map") with a child node per SPMI bus ("cnfg", "intr", "chnl_owner").
  * The global APID space is split between the buses in order, each taking
@@ -386,7 +537,6 @@ U_BOOT_DRIVER(msm_spmi) = {
  * the PPID (SID [12:8], peripheral [7:0]); read/write channels are 0x200
  * apart, observer channels 0x20 apart in a 0x40000 window per EE.
  */
-#define PMIC_ARB_VERSION_V8_MIN		0x80000000
 #define PMIC_ARB_V8_FEATURES(n)		(0x0004 + 0x4 * (n))
 #define PMIC_ARB_V8_PERIPH_MASK		GENMASK(12, 0)
 #define PMIC_ARB_V8_PPID_SID(m)		(((m) >> 8) & 0x1f)

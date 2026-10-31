@@ -1,0 +1,46 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ */
+
+#include <dt-bindings/input/linux-event-codes.h>
+
+/ {
+	reserved-memory {
+		dare-hyp@81300000 {
+			reg = <0x0 0x81300000 0x0 0x660000>;
+			no-map;
+		};
+
+		dare-tz@d8600000 {
+			reg = <0x0 0xd8600000 0x0 0x3200000>;
+			no-map;
+		};
+	};
+};
+
+/*
+ * XBL leaves the non-secure APSS watchdog running with a 30 s bite, and
+ * nothing services it until the OS does, so U-Boot hangs about 30 s after
+ * it starts (at a prompt, in fastboot). Describe it so that the qcom_wdt
+ * driver probes and stops it. Once the Linux DT describes the watchdog
+ * (status "reserved"), keep only a status = "okay" override here.
+ */
+&soc {
+	apss_watchdog: watchdog@17410000 {
+		compatible = "qcom,apss-wdt-eliza", "qcom,kpss-wdt";
+		reg = <0x0 0x17410000 0x0 0x1000>;
+		clocks = <&sleep_clk>;
+		interrupts = <GIC_SPI 0 IRQ_TYPE_EDGE_RISING>;
+	};
+};
+
+/*
+ * Volume down (PMK8550 PON RESIN), for holding it to enter fastboot.
+ * Carried here until the Linux DT enables it and that reaches
+ * dts/upstream.
+ */
+&pon_resin {
+	linux,code = <KEY_VOLUMEDOWN>;
+	status = "okay";
+};
