@@ -13,6 +13,9 @@ refresh: tag qcom/integration-20261024.
 Added 2026-10-26: qcom/kailua (SM8550 HDK), merged on top of the gated
 refresh; the state before it is tag qcom/integration-20261025.
 
+Added 2026-10-31: qcom/eliza (SM7750 MTP), merged on top of the
+2026-10-26 state (tag qcom/integration-20261026).
+
 ## Platform branches
 
 | platform | branch | on | carries | upstream status |
@@ -32,6 +35,7 @@ refresh; the state before it is tag qcom/integration-20261025.
 | lemans | qcom/lemans | base | IQ-9075 EVK fixes, watchdog revert, qcs9100 to lemans defconfig v2, QUPv3 W3 SPI clock v3, SPI-NOR node v2, snagboot v9 (8), snagboot SPI-NOR | open; our fixes not submitted |
 | shikra | qcom/shikra | base | Shikra v4 (Aswin, 12) | open |
 | nord | qcom/nord | base | Nord v3 (Aswin, 8) | open |
+| eliza | qcom/eliza | base | SM7750 MTP: clocks, RPMh stub, pinctrl, board, DARE carve-outs, UFS device version to the OS, SPMI v7 multi-bus, APSS watchdog, fastboot configuration; OP-TEE library (as qcom/hamoa) | not submitted |
 
 ## Per-patch submission map
 
@@ -252,6 +256,22 @@ Each commit of a platform branch (from its parent: the base or the branch it bui
 | c35dc976b5c2 | phy: qcom: snps-eusb2: add Nord compatible | Aswin Murugan | lore v3 <20261021160448.3893858-9-aswin.murugan@oss.qualcomm.com> nord-v3 |  |
 
 
+### qcom/eliza (on the base)
+
+| commit | subject | author | submission | note |
+|---|---|---|---|---|
+| 597b8ce0109e | board: qualcomm: tfa-optee: enable the OP-TEE library | Tyler Baker | lore v2 <20260928-monaco-ventuno-q-v2-1-0e046c8242be@oss.qualcomm.com> ventuno-v2 | same patch as on qcom/hamoa |
+| 59a0cb814bf6 | clk: qcom: add the Eliza GCC and TCSR clock driver | Tyler Baker | not submitted | TCSR UFS reference added in the merge |
+| 7a8703ca17b6 | clk: stub: add the Eliza RPMh clock controller | Tyler Baker | not submitted |  |
+| 54eeda47ff19 | pinctrl: qcom: add the Eliza pinctrl driver | Tyler Baker | not submitted |  |
+| 8d9524a978cc | board: qualcomm: add the Eliza MTP | Tyler Baker | not submitted |  |
+| 85d5a2081235 | dts: eliza-mtp: reserve the rest of the DARE regions | Tyler Baker | not submitted |  |
+| 39e33e79923d | ufs: record the device's UFS specification version | Tyler Baker | not submitted |  |
+| 4d9487d6fc31 | ufs: qcom: report the UFS device version to the OS | Tyler Baker | not submitted |  |
+| 452e99aa69d0 | spmi: msm: support the multi-bus v7 arbiter binding | Tyler Baker | not submitted |  |
+| 63df75c53f10 | arm: dts: eliza-mtp: describe the APSS watchdog | Tyler Baker | not submitted |  |
+| 10d386d2f836 | board: qualcomm: eliza: add a fastboot configuration | Tyler Baker | not submitted |  |
+
 ## In-flight submissions not carried
 
 - Lemans SPL v4 and its generic prerequisites (ipq5210 SPL architecture v10, spl-qcom-phase, spl-ufs v4, NVMEM v5): the gated Lemans flow keeps the lab SPL.
@@ -271,12 +291,12 @@ job cannot reach it). Jobs: https://lava.infra.foundries.io/scheduler/job/<id>.
 
 | platform | stack | build | job | result vs baseline |
 |---|---|---|---|---|
-| pakala | internal | QCDFP-261025-93 | 512788 | equal to 511913 (earlier gate) and 507296 (baseline) |
-| hamoa | internal | QCDFP-261025-94 | 512789 | equal to 511915 and 505458 |
-| purwa | internal | QCDFP-261025-95 | 512790 | equal to 511910 and 507756 (9 fails, as stock) |
+| pakala | internal | QCDFP-261031-412 | 528269 | equal to 512788 case by case (the same 5 ADSP fails), U-Boot console lines unchanged |
+| hamoa | internal | QCDFP-261031-410 | 528261 | equal to 512789 case by case (434/0/17), U-Boot console lines unchanged; Eliza merge brings the SPMI v7 multi-bus probe and the UFS device version write |
+| purwa | internal | QCDFP-261031-411 | 528262 | equal to 512790 case by case (410/9/17, the same 9 fails as stock), U-Boot console lines unchanged |
 | glymur | internal | QCDFP-261025-96 | 512791 | equal to 511917 and 510585 |
 | mahua | internal | QCDFP-261025-97 | 512792 | equal to 511918 and 510593 |
-| kaanapali | internal | QCDFP-261025-98 | 512810 | equal to 511465 and 505311 (first run 512793 lost the second boot to a one-off PMIC over-current reset of the board, not repeated) |
+| kaanapali | internal | QCDFP-261031-413 | 528283 | equal to 512810 and to the same-day control 528284 (QCDFP-261025-98) case by case, both on kaanapali-mtp-03; kaanapali-mtp-02 now resets on a PMIC_D LDO4 (UFS vccq) over-current on any stack (528270, 528272, control 528274) |
 | kodiak | internal | QCDFP-261025-81 | 512596 | equal to 511914 except the known big-core cpufreq runtime-ratio flake |
 | kodiak | public | QCDFP-261025-83 | 512685 | equal to 502713 except policy7-min fail -> pass |
 | agatti | internal | QCDFP-261025-85 | 512739 | equal to 511909 and 490882 |
@@ -292,3 +312,5 @@ job cannot reach it). Jobs: https://lava.infra.foundries.io/scheduler/job/<id>.
 | lanai | public |  |  | untested: no LAVA board |
 | kailua | public |  |  | untested: no board yet (lab access pending) |
 | nord | internal |  |  | untested: no LAVA board |
+| eliza | public | QCDFP-261031-408 | MTP, no LAVA board | BOARD-REQUEST-3: TF-A/OP-TEE/U-Boot FP, U-Boot UFS clock lines gone, UFS, fastboot, GPU, NPU, CPU hotplug pass (BOARD-REQUEST-1 on 401 passed the same steps) |
+| eliza | internal | QCDFP-261031-402 | MTP, no LAVA board | BOARD-REQUEST-1: TF-A/OP-TEE/U-Boot FP, kiosk, GPU, NPU, CPU hotplug and idle, fastboot, UFS pass vs fw346; the two U-Boot UFS clock lines it showed are fixed in the U-Boot merge (408) |
