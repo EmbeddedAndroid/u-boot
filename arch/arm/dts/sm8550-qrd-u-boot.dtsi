@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ */
+
+/*
+ * XBL leaves the non-secure APSS watchdog running, and nothing services it
+ * until the OS does, so the SoC resets about 81 s after power on while
+ * U-Boot sits at a prompt or in fastboot. Describe it so that the qcom_wdt
+ * driver probes and stops it. Once the Linux DT describes the watchdog
+ * (status "reserved"), keep only a status = "okay" override here.
+ */
+&soc {
+	apss_watchdog: watchdog@17410000 {
+		compatible = "qcom,apss-wdt-sm8550", "qcom,kpss-wdt";
+		reg = <0x0 0x17410000 0x0 0x1000>;
+		clocks = <&sleep_clk>;
+		interrupts = <GIC_SPI 0 IRQ_TYPE_EDGE_RISING 0>;
+	};
+};
