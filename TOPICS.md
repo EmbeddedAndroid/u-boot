@@ -16,6 +16,9 @@ refresh; the state before it is tag qcom/integration-20261025.
 Added 2026-10-31: qcom/eliza (SM7750 MTP), merged on top of the
 2026-10-26 state (tag qcom/integration-20261026).
 
+Added 2026-11-02: the SM8550 QRD bring-up on qcom/kailua (USB3 NoC
+clock, APSS watchdog node).
+
 ## Platform branches
 
 | platform | branch | on | carries | upstream status |
@@ -30,7 +33,7 @@ Added 2026-10-31: qcom/eliza (SM7750 MTP), merged on top of the
 | agatti | qcom/agatti | base | UNO Q board, OP-TEE reservation | not submitted |
 | talos | qcom/talos | base | QCS615 Ride, l17a always on, qcs615 SDCC2 clock, watchdog autostart revert, qcs615 eMMC env v2 | open; our patches not submitted |
 | lanai | qcom/lanai | base | SM8650 QRD | not submitted |
-| kailua | qcom/kailua | lanai | nothing of its own: the Lanai eUSB2 repeater pair covers the SM8550 HDK (build: qcom_defconfig + tfa-optee.config, DEVICE_TREE=qcom/sm8550-hdk) | not submitted |
+| kailua | qcom/kailua | lanai | SM8550 QRD: USB3 configuration NoC clock, APSS watchdog node in sm8550-qrd-u-boot.dtsi; the Lanai eUSB2 repeater pair covers the rest (build: qcom_defconfig + tfa-optee.config, DEVICE_TREE=qcom/sm8550-qrd) | not submitted |
 | kodiak | qcom/kodiak | base | RB3 Gen 2 fixes, shared RPMh clock driver (monaco v4 1/5) + sc7280 RPMh clocks | open; our fixes not submitted |
 | lemans | qcom/lemans | base | IQ-9075 EVK fixes, watchdog revert, qcs9100 to lemans defconfig v2, QUPv3 W3 SPI clock v3, SPI-NOR node v2, snagboot v9 (8), snagboot SPI-NOR | open; our fixes not submitted |
 | shikra | qcom/shikra | base | Shikra v4 (Aswin, 12) | open |
@@ -178,6 +181,13 @@ Each commit of a platform branch (from its parent: the base or the branch it bui
 | dbc4fce4d87f | phy: qcom: add the PMIC eUSB2 repeater driver | Tyler Baker | not submitted |  |
 | 021625196df8 | phy: qcom: snps-eusb2: initialize the repeater | Tyler Baker | not submitted |  |
 
+### qcom/kailua (on qcom/lanai)
+
+| commit | subject | author | submission | note |
+|---|---|---|---|---|
+| 4c7e5eaab6fa | clk: qcom: sm8550: add the usb3 cfg noc clock | Tyler Baker | not submitted | as SM8650 07ddbb89c9c |
+| 39c234956c96 | arm: dts: sm8550-qrd: describe the APSS watchdog | Tyler Baker | not submitted | until the Linux SM8550 DT has the node |
+
 ### qcom/kodiak (on the base)
 
 | commit | subject | author | submission | note |
@@ -310,7 +320,7 @@ job cannot reach it). Jobs: https://lava.infra.foundries.io/scheduler/job/<id>.
 | shikra | public | QCDFP-261025-91 | 512770 | U-Boot only (Shikra v4) on the stock XBL/QSEE/Gunyah health image: FP, Linux, login and the health smoke tests pass as health job 511579; no upstream TF-A/OP-TEE boot path yet |
 | lanai | internal |  |  | untested: no LAVA board |
 | lanai | public |  |  | untested: no LAVA board |
-| kailua | public |  |  | untested: no board yet (lab access pending) |
+| kailua | public | KAILUAFP-261102-183057-fin1 | QRD, no LAVA board | built from this merge (d5f5e328a1db) with TF-A qcom/kailua merged into TF-A integration and OP-TEE d1470ab9f4fc: U-Boot FP, USB fastboot download, APSS watchdog stopped (WDT_EN reads 0 at the prompt, checked on the earlier lw2 build of the same commit), Linux boot; suite KAILUASUITE-261102-183149-s7 over the board console: cold 222 pass, 2 fail (cpufreq readbacks, same on the vendor firmware), 17 skip; warm reboot 14 pass, 0 fail, 2 skip |
 | nord | internal |  |  | untested: no LAVA board |
 | eliza | public | QCDFP-261031-408 | MTP, no LAVA board | BOARD-REQUEST-3: TF-A/OP-TEE/U-Boot FP, U-Boot UFS clock lines gone, UFS, fastboot, GPU, NPU, CPU hotplug pass (BOARD-REQUEST-1 on 401 passed the same steps) |
 | eliza | internal | QCDFP-261031-402 | MTP, no LAVA board | BOARD-REQUEST-1: TF-A/OP-TEE/U-Boot FP, kiosk, GPU, NPU, CPU hotplug and idle, fastboot, UFS pass vs fw346; the two U-Boot UFS clock lines it showed are fixed in the U-Boot merge (408) |
