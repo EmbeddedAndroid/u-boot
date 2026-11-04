@@ -482,7 +482,19 @@ static int qcom_reset_deassert(struct reset_ctl *rst)
 	return qcom_reset_set(rst, false);
 }
 
+static int qcom_reset_request(struct reset_ctl *rst)
+{
+	struct msm_clk_data *data = (struct msm_clk_data *)dev_get_driver_data(rst->dev);
+
+	/* A hole in the sparse reset table would toggle bit 0 at offset 0 of the block */
+	if (rst->id >= data->num_resets || !data->resets[rst->id].reg)
+		return -ENODEV;
+
+	return 0;
+}
+
 static const struct reset_ops qcom_reset_ops = {
+	.request = qcom_reset_request,
 	.rst_assert = qcom_reset_assert,
 	.rst_deassert = qcom_reset_deassert,
 };
