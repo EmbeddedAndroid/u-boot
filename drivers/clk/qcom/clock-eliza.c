@@ -43,6 +43,17 @@ static const struct freq_tbl ftbl_gcc_usb30_prim_master_clk_src[] = {
 	{ }
 };
 
+/* GPLL0 even and XO entries of the Linux table: GPLL8 is not set up in U-Boot */
+static const struct freq_tbl ftbl_gcc_sdcc1_apps_clk_src[] = {
+	F(144000, CFG_CLK_SRC_CXO, 16, 3, 25),
+	F(400000, CFG_CLK_SRC_CXO, 12, 1, 4),
+	F(20000000, CFG_CLK_SRC_GPLL0_EVEN, 5, 1, 3),
+	F(25000000, CFG_CLK_SRC_GPLL0_EVEN, 12, 0, 0),
+	F(50000000, CFG_CLK_SRC_GPLL0_EVEN, 6, 0, 0),
+	F(100000000, CFG_CLK_SRC_GPLL0_EVEN, 3, 0, 0),
+	{ }
+};
+
 static ulong eliza_set_rate(struct clk *clk, ulong rate)
 {
 	struct msm_clk_priv *priv = dev_get_priv(clk->dev);
@@ -57,6 +68,11 @@ static ulong eliza_set_rate(struct clk *clk, ulong rate)
 	case GCC_USB30_PRIM_MASTER_CLK:
 		freq = qcom_find_freq(ftbl_gcc_usb30_prim_master_clk_src, rate);
 		clk_rcg_set_rate_mnd(priv->base, 0x39030,
+				     freq->pre_div, freq->m, freq->n, freq->src, 8);
+		return freq->freq;
+	case GCC_SDCC1_APPS_CLK:
+		freq = qcom_find_freq(ftbl_gcc_sdcc1_apps_clk_src, rate);
+		clk_rcg_set_rate_mnd(priv->base, 0xa9018,
 				     freq->pre_div, freq->m, freq->n, freq->src, 8);
 		return freq->freq;
 	case GCC_USB30_PRIM_MOCK_UTMI_CLK:
@@ -91,6 +107,8 @@ static const struct gate_clk eliza_clks[] = {
 	GATE_CLK_POLLED(GCC_QUPV3_WRAP_1_S_AHB_CLK,	0x52008, BIT(21), 0x23004),
 	GATE_CLK_POLLED(GCC_QUPV3_WRAP_2_M_AHB_CLK,	0x52010, BIT(2), 0x23158),
 	GATE_CLK_POLLED(GCC_QUPV3_WRAP_2_S_AHB_CLK,	0x52010, BIT(1), 0x2315c),
+	GATE_CLK_POLLED(GCC_SDCC1_AHB_CLK,		0xa9004, BIT(0), 0xa9004),
+	GATE_CLK_POLLED(GCC_SDCC1_APPS_CLK,		0xa9008, BIT(0), 0xa9008),
 	GATE_CLK_POLLED(GCC_UFS_PHY_AHB_CLK,		0x77028, BIT(0), 0x77028),
 	GATE_CLK_POLLED(GCC_UFS_PHY_AXI_CLK,		0x77018, BIT(0), 0x77018),
 	GATE_CLK_POLLED(GCC_UFS_PHY_PHY_AUX_CLK,	0x770bc, BIT(0), 0x770bc),
@@ -125,6 +143,7 @@ static int eliza_enable(struct clk *clk)
 
 static const struct qcom_reset_map eliza_gcc_resets[] = {
 	[GCC_QUSB2PHY_PRIM_BCR] = { 0x12000 },
+	[GCC_SDCC1_BCR] = { 0xa9000 },
 	[GCC_UFS_PHY_BCR] = { 0x77000 },
 	[GCC_USB30_PRIM_BCR] = { 0x39000 },
 };
