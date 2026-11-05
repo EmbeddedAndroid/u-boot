@@ -172,9 +172,31 @@ static int msm_sdhci_config_dll(struct sdhci_host *host, u32 clock, bool enable)
 	return 0;
 }
 
+static void msm_sdhci_set_control_reg(struct sdhci_host *host)
+{
+	enum bus_mode mode = host->mmc->selected_mode;
+	u16 ctrl2;
+
+	sdhci_set_control_reg(host);
+
+	/*
+	 * eMMC high speed is not a UHS mode: leave the UHS mode select
+	 * field at SDR12, as the Linux sdhci-msm driver does, rather than
+	 * the SDR25/SDR50 codes the generic code picks. With SDR50 at
+	 * 52 MHz the Eliza CQS EVK misses the card's responses and every
+	 * later command times out.
+	 */
+	if (mode == MMC_HS || mode == MMC_HS_52) {
+		ctrl2 = sdhci_readw(host, SDHCI_HOST_CONTROL2);
+		ctrl2 &= ~SDHCI_CTRL_UHS_MASK;
+		ctrl2 |= SDHCI_CTRL_UHS_SDR12;
+		sdhci_writew(host, ctrl2, SDHCI_HOST_CONTROL2);
+	}
+}
+
 struct sdhci_ops msm_sdhci_ops = {
 	.config_dll = &msm_sdhci_config_dll,
-	.set_control_reg = &sdhci_set_control_reg,
+	.set_control_reg = &msm_sdhci_set_control_reg,
 };
 
 static int msm_sdc_probe(struct udevice *dev)
