@@ -112,6 +112,15 @@ Or for smartphones::
 	make CROSS_COMPILE=aarch64-linux-gnu- O=.output qcom_defconfig qcom-phone.config
 	make CROSS_COMPILE=aarch64-linux-gnu- O=.output -j$(nproc)
 
+Or for a board booting with TF-A and OP-TEE whose discrete TPM is owned
+by OP-TEE (for instance the IQ-9075 EVK, see :doc:`/usage/cmd/tpm2`)::
+
+	make CROSS_COMPILE=aarch64-linux-gnu- O=.output qcom_defconfig tfa-optee.config optee-dtpm.config
+	make CROSS_COMPILE=aarch64-linux-gnu- O=.output -j$(nproc)
+
+This enables the TPM, its OP-TEE driver, the tpm2 command and, by
+default, the UEFI TCG2 protocol, which needs a working TPM to boot.
+
 - gzip u-boot::
 
 	gzip u-boot-nodtb.bin
