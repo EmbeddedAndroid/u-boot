@@ -187,6 +187,18 @@ config TPM2_FTPM_TEE
 	help
 	  This driver supports firmware TPM running in TEE.
 
+config TPM2_OPTEE_DTPM
+	bool "Discrete TPM owned by OP-TEE"
+	depends on TEE && OPTEE && TPM_V2 && OPTEE_SERVICE_DISCOVERY
+	select TPM2_TEE
+	help
+	  This driver supports a discrete TPM 2.0 on a bus that only the
+	  secure world can reach (for instance an SPI TPM on a serial engine
+	  assigned to OP-TEE). OP-TEE drives the chip and relays raw TPM
+	  commands through its TPM passthrough pseudo TA, which this driver
+	  binds when OP-TEE enumerates it. The usual TPM operations and the
+	  'tpm2' command then work on the chip.
+
 config TPM2_MMIO
 	bool "MMIO based TPM2 Interface"
 	depends on TPM_V2
