@@ -66,7 +66,14 @@ static lbaint_t write_sparse_chunk_raw(struct sparse_storage *info,
 		return write_blks;
 	}
 
-	aligned_buf = memalign(ARCH_DMA_MINALIGN, info->blksz * aligned_buf_blks);
+	/*
+	 * The bounce buffer scales with the block size: shrink it until it
+	 * fits the heap rather than failing outright on 4 KiB block devices.
+	 */
+	while (!(aligned_buf = memalign(ARCH_DMA_MINALIGN,
+					info->blksz * aligned_buf_blks)) &&
+	       aligned_buf_blks > 1)
+		aligned_buf_blks /= 2;
 	if (!aligned_buf) {
 		info->mssg("Malloc failed for: CHUNK_TYPE_RAW", response);
 		return -ENOMEM;
