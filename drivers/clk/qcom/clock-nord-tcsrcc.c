@@ -38,6 +38,21 @@ static struct msm_clk_data nord_tcsrcc_data = {
 	.num_clks = ARRAY_SIZE(nord_tcsrcc_clks),
 };
 
+/*
+ * SecaAU keeps the Nord CLKREF register layout but feeds UFS_0 from the QREF
+ * at 0x1008.
+ */
+static const struct gate_clk seca_tcsrcc_clks[] = {
+	GATE_CLK(TCSR_UFS_CLKREF_EN,         0x1008, BIT(0)),
+	GATE_CLK(TCSR_USB2_0_CLKREF_EN,      0x4008, BIT(0)),
+	GATE_CLK(TCSR_USB3_0_CLKREF_EN,      0x8008, BIT(0)),
+};
+
+static struct msm_clk_data seca_tcsrcc_data = {
+	.clks = seca_tcsrcc_clks,
+	.num_clks = ARRAY_SIZE(seca_tcsrcc_clks),
+};
+
 static int nord_tcsrcc_enable(struct clk *clk)
 {
 	struct msm_clk_priv *priv = dev_get_priv(clk->dev);
@@ -73,6 +88,10 @@ static const struct udevice_id gcc_nord_tcsrcc_of_match[] = {
 	{
 		.compatible = "qcom,nord-tcsrcc",
 		.data = (ulong)&nord_tcsrcc_data,
+	},
+	{
+		.compatible = "qcom,seca-tcsrcc",
+		.data = (ulong)&seca_tcsrcc_data,
 	},
 	{ }
 };

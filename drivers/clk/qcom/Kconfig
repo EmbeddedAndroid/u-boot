@@ -95,8 +95,8 @@ config CLK_QCOM_NORD_TCSRCC
 	select CLK_QCOM
 	help
 	  Say Y here to enable support for the TCSR Clock Controller on the
-	  Snapdragon Nord SoC. This driver supports the CLKREF enable gates
-	  exposed by the TCSRCC hardware block.
+	  Snapdragon Nord and SecaAU SoCs. This driver supports the CLKREF
+	  enable gates exposed by the TCSRCC hardware block.
 
 config CLK_QCOM_QCM2290
 	bool "Qualcomm QCM2290 GCC"
