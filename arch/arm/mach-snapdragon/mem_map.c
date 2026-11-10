@@ -134,8 +134,23 @@ static void configure_reserved_memory(void)
 			/* Qualcomm devices use #address/size-cells = <2> but all reserved regions are within
 			 * the 32-bit address space. So we can cheat here for speed.
 			 */
-			res[i].start = fdt32_to_cpu(ptr[1]);
-			res[i].size = fdt32_to_cpu(ptr[3]);
+			start = fdt32_to_cpu(ptr[1]);
+			size = fdt32_to_cpu(ptr[3]);
+			/*
+			 * set_regions() only consumes whole pages. A no-map region
+			 * must never be reachable, so it grows to whole pages; a
+			 * mappable one shrinks to the pages it covers entirely, so
+			 * it can never re-enable a page shared with a no-map one.
+			 */
+			if (attrs == PTE_TYPE_FAULT) {
+				res[i].start = ALIGN_DOWN(start, SZ_4K);
+				res[i].size = ALIGN(start + size, SZ_4K) - res[i].start;
+			} else {
+				res[i].start = ALIGN(start, SZ_4K);
+				if (ALIGN_DOWN(start + size, SZ_4K) <= res[i].start)
+					continue;
+				res[i].size = ALIGN_DOWN(start + size, SZ_4K) - res[i].start;
+			}
 			res[i].attrs = attrs;
 			i++;
 		}
@@ -174,8 +189,10 @@ static void configure_reserved_memory(void)
 			attrs = res[i].attrs;
 		} else {
 			/* This region is next to (<8K) the previous one so combine them.
-			 * Accounting for any small (<8K) gap. */
-			size = (res[i].start - start) + res[i].size;
+			 * Accounting for any small (<8K) gap. It may also overlap or lie
+			 * entirely within the meta-region, so never shrink it.
+			 */
+			size = max(start + size, res[i].start + res[i].size) - start;
 		}
 	}
 }
