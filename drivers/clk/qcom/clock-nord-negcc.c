@@ -169,10 +169,101 @@ static struct msm_clk_data nord_negcc_data = {
 	.set_rate = nord_negcc_set_rate,
 };
 
+/*
+ * SecaAU keeps the Nord NE_GCC layout for the QUP WRAP2 and USB tiles but
+ * has no UFS or GPU_2 blocks here, and votes every QUP WRAP2 branch through
+ * APCS_CLOCK_BRANCH_ENA_VOTE: on SecaAU offset 0x57008 is the PLL vote.
+ */
+static const struct gate_clk seca_negcc_clks[] = {
+	GATE_CLK_POLLED(NE_GCC_AGGRE_NOC_USB2_AXI_CLK,     0x31068, BIT(0),  0x31068),
+	GATE_CLK_POLLED(NE_GCC_AGGRE_NOC_USB3_PRIM_AXI_CLK, 0x2a098, BIT(0),  0x2a098),
+	GATE_CLK_POLLED(NE_GCC_AGGRE_NOC_USB3_SEC_AXI_CLK, 0x2c098, BIT(0),  0x2c098),
+	GATE_CLK_POLLED(NE_GCC_AHB2PHY_CLK,                0x30004, BIT(0),  0x30004),
+	GATE_CLK_POLLED(NE_GCC_CNOC_USB2_AXI_CLK,          0x31064, BIT(0),  0x31064),
+	GATE_CLK_POLLED(NE_GCC_CNOC_USB3_PRIM_AXI_CLK,     0x2a094, BIT(0),  0x2a094),
+	GATE_CLK_POLLED(NE_GCC_CNOC_USB3_SEC_AXI_CLK,      0x2c094, BIT(0),  0x2c094),
+	GATE_CLK_POLLED(NE_GCC_QUPV3_WRAP2_M_AHB_CLK,      0x57000, BIT(21), 0x38004),
+	GATE_CLK_POLLED(NE_GCC_QUPV3_WRAP2_S_AHB_CLK,      0x57000, BIT(22), 0x38008),
+	GATE_CLK_POLLED(NE_GCC_QUPV3_WRAP2_CORE_CLK,       0x57000, BIT(23), 0x3800c),
+	GATE_CLK_POLLED(NE_GCC_QUPV3_WRAP2_CORE_2X_CLK,    0x57000, BIT(24), 0x38020),
+	GATE_CLK_POLLED(NE_GCC_QUPV3_WRAP2_S0_CLK,         0x57000, BIT(25), 0x3815c),
+	GATE_CLK_POLLED(NE_GCC_QUPV3_WRAP2_S1_CLK,         0x57000, BIT(26), 0x38298),
+	GATE_CLK_POLLED(NE_GCC_QUPV3_WRAP2_S2_CLK,         0x57000, BIT(27), 0x383d4),
+	GATE_CLK_POLLED(NE_GCC_QUPV3_WRAP2_S3_CLK,         0x57000, BIT(28), 0x38510),
+	GATE_CLK_POLLED(NE_GCC_QUPV3_WRAP2_S4_CLK,         0x57000, BIT(29), 0x3864c),
+	GATE_CLK_POLLED(NE_GCC_QUPV3_WRAP2_S5_CLK,         0x57000, BIT(30), 0x38788),
+	GATE_CLK_POLLED(NE_GCC_QUPV3_WRAP2_S6_CLK,         0x57000, BIT(31), 0x388c4),
+	GATE_CLK_POLLED(NE_GCC_USB31_PRIM_ATB_CLK,         0x2a018, BIT(0),  0x2a018),
+	GATE_CLK_POLLED(NE_GCC_USB31_PRIM_EUD_AHB_CLK,     0x2a02c, BIT(0),  0x2a02c),
+	GATE_CLK_POLLED(NE_GCC_USB31_SEC_ATB_CLK,          0x2c018, BIT(0),  0x2c018),
+	GATE_CLK_POLLED(NE_GCC_USB31_SEC_EUD_AHB_CLK,      0x2c02c, BIT(0),  0x2c02c),
+
+	GATE_CLK(NE_GCC_FRQ_MEASURE_REF_CLK,      0x20008, BIT(0)),
+	GATE_CLK(NE_GCC_GP1_CLK,                  0x21000, BIT(0)),
+	GATE_CLK(NE_GCC_GP2_CLK,                  0x22000, BIT(0)),
+	GATE_CLK(NE_GCC_SDCC4_APPS_CLK,           0x18004, BIT(0)),
+	GATE_CLK(NE_GCC_SDCC4_AXI_CLK,            0x18014, BIT(0)),
+	GATE_CLK(NE_GCC_USB20_MASTER_CLK,         0x31018, BIT(0)),
+	GATE_CLK(NE_GCC_USB20_MOCK_UTMI_CLK,      0x3102c, BIT(0)),
+	GATE_CLK(NE_GCC_USB20_SLEEP_CLK,          0x31028, BIT(0)),
+	GATE_CLK(NE_GCC_USB31_PRIM_MASTER_CLK,    0x2a01c, BIT(0)),
+	GATE_CLK(NE_GCC_USB31_PRIM_MOCK_UTMI_CLK, 0x2a034, BIT(0)),
+	GATE_CLK(NE_GCC_USB31_PRIM_SLEEP_CLK,     0x2a030, BIT(0)),
+	GATE_CLK(NE_GCC_USB31_SEC_MASTER_CLK,     0x2c01c, BIT(0)),
+	GATE_CLK(NE_GCC_USB31_SEC_MOCK_UTMI_CLK,  0x2c034, BIT(0)),
+	GATE_CLK(NE_GCC_USB31_SEC_SLEEP_CLK,      0x2c030, BIT(0)),
+	GATE_CLK(NE_GCC_USB3_PRIM_PHY_AUX_CLK,    0x2a06c, BIT(0)),
+	GATE_CLK(NE_GCC_USB3_PRIM_PHY_COM_AUX_CLK, 0x2a070, BIT(0)),
+	GATE_CLK(NE_GCC_USB3_PRIM_PHY_PIPE_CLK,   0x2a074, BIT(0)),
+	GATE_CLK(NE_GCC_USB3_SEC_PHY_AUX_CLK,     0x2c06c, BIT(0)),
+	GATE_CLK(NE_GCC_USB3_SEC_PHY_COM_AUX_CLK, 0x2c070, BIT(0)),
+	GATE_CLK(NE_GCC_USB3_SEC_PHY_PIPE_CLK,    0x2c074, BIT(0)),
+};
+
+static const struct qcom_reset_map seca_negcc_resets[] = {
+	[NE_GCC_QUPV3_WRAPPER_2_BCR] = { 0x38000 },
+	[NE_GCC_SDCC4_BCR] = { 0x18000 },
+	[NE_GCC_USB20_PRIM_BCR] = { 0x31000 },
+	[NE_GCC_USB31_PRIM_BCR] = { 0x2a000 },
+	[NE_GCC_USB31_SEC_BCR] = { 0x2c000 },
+	[NE_GCC_USB3_DP_PHY_PRIM_BCR] = { 0x2b008 },
+	[NE_GCC_USB3_DP_PHY_SEC_BCR] = { 0x2d008 },
+	[NE_GCC_USB3_PHY_PRIM_BCR] = { 0x2b000 },
+	[NE_GCC_USB3_PHY_SEC_BCR] = { 0x2d000 },
+	[NE_GCC_USB3PHY_PHY_PRIM_BCR] = { 0x2b004 },
+	[NE_GCC_USB3PHY_PHY_SEC_BCR] = { 0x2d004 },
+	[NE_GCC_QUSB2PHY_PRIM_BCR] = { 0x2e000 },
+};
+
+static const struct qcom_power_map seca_negcc_gdscs[] = {
+	[NE_GCC_USB20_PRIM_GDSC] = { 0x31004 },
+	[NE_GCC_USB31_PRIM_GDSC] = { 0x2a004 },
+	[NE_GCC_USB31_SEC_GDSC] = { 0x2c004 },
+	[NE_GCC_USB3_PHY_GDSC] = { 0x2b00c },
+	[NE_GCC_USB3_SEC_PHY_GDSC] = { 0x2d00c },
+};
+
+static struct msm_clk_data seca_negcc_data = {
+	.resets = seca_negcc_resets,
+	.num_resets = ARRAY_SIZE(seca_negcc_resets),
+	.clks = seca_negcc_clks,
+	.num_clks = ARRAY_SIZE(seca_negcc_clks),
+
+	.power_domains = seca_negcc_gdscs,
+	.num_power_domains = ARRAY_SIZE(seca_negcc_gdscs),
+
+	.enable = nord_negcc_enable,
+	.set_rate = nord_negcc_set_rate,
+};
+
 static const struct udevice_id gcc_nord_negcc_of_match[] = {
 	{
 		.compatible = "qcom,nord-negcc",
 		.data = (ulong)&nord_negcc_data,
+	},
+	{
+		.compatible = "qcom,seca-negcc",
+		.data = (ulong)&seca_negcc_data,
 	},
 	{ }
 };
