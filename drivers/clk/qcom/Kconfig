@@ -146,6 +146,14 @@ config CLK_QCOM_SDM845
 	  on the Snapdragon 845 SoC. This driver supports the clocks
 	  and resets exposed by the GCC hardware block.
 
+config CLK_QCOM_SECA_NWGCC
+	bool "Qualcomm SecaAU NWGCC"
+	select CLK_QCOM
+	help
+	  Say Y here to enable support for the North-West Global Clock
+	  Controller on the Qualcomm SecaAU SoC. This driver supports the
+	  UFS clocks, resets and GDSCs exposed by the NWGCC hardware block.
+
 config CLK_QCOM_SM6115
 	bool "Qualcomm SM6115 GCC"
 	select CLK_QCOM
