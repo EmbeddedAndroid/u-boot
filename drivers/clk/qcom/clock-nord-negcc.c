@@ -27,9 +27,30 @@
  * clock-qcom.h/.c) — flagged as a YELLOW residual risk, not worked around.
  */
 
+static const struct freq_tbl ftbl_ne_gcc_qupv3_wrap2_s_clk_src[] = {
+	F(7372800, CFG_CLK_SRC_GPLL0, 1, 192, 15625),
+	F(14745600, CFG_CLK_SRC_GPLL0, 1, 384, 15625),
+	F(19200000, CFG_CLK_SRC_CXO, 1, 0, 0),
+	F(29491200, CFG_CLK_SRC_GPLL0, 1, 768, 15625),
+	F(32000000, CFG_CLK_SRC_GPLL0, 1, 4, 75),
+	F(48000000, CFG_CLK_SRC_GPLL0, 1, 2, 25),
+	F(51200000, CFG_CLK_SRC_GPLL0, 1, 32, 375),
+	F(64000000, CFG_CLK_SRC_GPLL0, 1, 8, 75),
+	F(75000000, CFG_CLK_SRC_GPLL0, 8, 0, 0),
+	F(80000000, CFG_CLK_SRC_GPLL0, 1, 2, 15),
+	F(96000000, CFG_CLK_SRC_GPLL0, 1, 4, 25),
+	F(100000000, CFG_CLK_SRC_GPLL0, 6, 0, 0),
+	F(102400000, CFG_CLK_SRC_GPLL0, 1, 64, 375),
+	F(112000000, CFG_CLK_SRC_GPLL0, 1, 14, 75),
+	F(117964800, CFG_CLK_SRC_GPLL0, 1, 3072, 15625),
+	F(120000000, CFG_CLK_SRC_GPLL0, 5, 0, 0),
+	{ }
+};
+
 static ulong nord_negcc_set_rate(struct clk *clk, ulong rate)
 {
 	struct msm_clk_priv *priv = dev_get_priv(clk->dev);
+	const struct freq_tbl *freq;
 
 	if (clk->id < priv->data->num_clks)
 		debug("%s: %s, requested rate=%ld\n", __func__,
@@ -37,11 +58,10 @@ static ulong nord_negcc_set_rate(struct clk *clk, ulong rate)
 
 	switch (clk->id) {
 	case NE_GCC_QUPV3_WRAP2_S1_CLK:
-		WARN(rate != 14745600,
-		     "Unexpected rate for NE_GCC_QUPV3_WRAP2_S1_CLK: %lu\n", rate);
+		freq = qcom_find_freq(ftbl_ne_gcc_qupv3_wrap2_s_clk_src, rate);
 		clk_rcg_set_rate_mnd(priv->base, NE_GCC_QUPV3_WRAP2_S1_CLK_CMD_RCGR,
-				     1, 384, 15625, CFG_CLK_SRC_GPLL0, 16);
-		return rate;
+				     freq->pre_div, freq->m, freq->n, freq->src, 16);
+		return freq->freq;
 	case NE_GCC_USB31_PRIM_MASTER_CLK:
 		clk_rcg_set_rate_mnd(priv->base, NE_GCC_USB31_PRIM_MASTER_CLK_CMD_RCGR,
 				     3, 0, 0, CFG_CLK_SRC_GPLL0, 8);
