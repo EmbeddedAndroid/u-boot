@@ -80,7 +80,10 @@ static int fdt_cmp_res(const void *v1, const void *v2)
 {
 	const struct mem_resource_attrs *res1 = v1, *res2 = v2;
 
-	return res1->start - res2->start;
+	if (res1->start == res2->start)
+		return 0;
+
+	return res1->start < res2->start ? -1 : 1;
 }
 
 #define N_RESERVED_REGIONS 64
@@ -130,17 +133,15 @@ static void configure_reserved_memory(void)
 		if (!ptr)
 			continue;
 
-		/* Qualcomm devices use #address/size-cells = <2> but all reserved regions
-		 * are within the 32-bit address space. So we can cheat here for speed.
-		 */
+		/* Qualcomm devices use #address/size-cells = <2> */
 		for (; len >= 4 * (int)sizeof(*ptr); ptr += 4, len -= 4 * sizeof(*ptr)) {
 			if (i == N_RESERVED_REGIONS) {
 				log_err("Too many reserved regions!\n");
 				goto collected;
 			}
 
-			start = fdt32_to_cpu(ptr[1]);
-			size = fdt32_to_cpu(ptr[3]);
+			start = (u64)fdt32_to_cpu(ptr[0]) << 32 | fdt32_to_cpu(ptr[1]);
+			size = (u64)fdt32_to_cpu(ptr[2]) << 32 | fdt32_to_cpu(ptr[3]);
 			/*
 			 * set_regions() only consumes whole pages. A no-map region
 			 * must never be reachable, so it grows to whole pages; a
