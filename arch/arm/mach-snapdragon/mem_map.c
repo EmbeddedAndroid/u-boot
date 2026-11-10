@@ -86,7 +86,7 @@ static int fdt_cmp_res(const void *v1, const void *v2)
 	return res1->start < res2->start ? -1 : 1;
 }
 
-#define N_RESERVED_REGIONS 64
+#define N_RESERVED_REGIONS 128
 
 /* Map and unmap reserved memory regions as appropriate.
  * Mark all no-map regions as PTE_TYPE_FAULT to prevent speculative access.
