@@ -12,6 +12,7 @@ Qualcomm
    dragonwing
    rb3gen2
    rubikpi3
+   seca
    iq8
    phones
    rdp
