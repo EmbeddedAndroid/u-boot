@@ -111,6 +111,8 @@ static void configure_reserved_memory(void)
 	/* Collect the reserved memory regions and appropriate attrs */
 	fdt_for_each_subnode(rmem, gd->fdt_blob, parent) {
 		const fdt32_t *ptr;
+		int len;
+
 		attrs = PTE_TYPE_FAULT;
 		/* If the no-map property isn't set then the region is valid */
 		if (!fdt_getprop(gd->fdt_blob, rmem, "no-map", NULL))
@@ -120,20 +122,23 @@ static void configure_reserved_memory(void)
 		if (fdt_getprop(gd->fdt_blob, rmem, "compatible", NULL))
 			attrs = PTE_TYPE_VALID | PTE_BLOCK_MEMTYPE(MT_NORMAL);
 
-		if (i == N_RESERVED_REGIONS) {
-			log_err("Too many reserved regions!\n");
-			break;
-		}
-
 		/* Read the address and size out from the reg property. Doing this "properly" with
 		 * fdt_get_resource() takes ~70ms on SDM845, but open-coding the happy path here
 		 * takes <1ms... Oh the woes of no dcache.
 		 */
-		ptr = fdt_getprop(gd->fdt_blob, rmem, "reg", NULL);
-		if (ptr) {
-			/* Qualcomm devices use #address/size-cells = <2> but all reserved regions are within
-			 * the 32-bit address space. So we can cheat here for speed.
-			 */
+		ptr = fdt_getprop(gd->fdt_blob, rmem, "reg", &len);
+		if (!ptr)
+			continue;
+
+		/* Qualcomm devices use #address/size-cells = <2> but all reserved regions
+		 * are within the 32-bit address space. So we can cheat here for speed.
+		 */
+		for (; len >= 4 * (int)sizeof(*ptr); ptr += 4, len -= 4 * sizeof(*ptr)) {
+			if (i == N_RESERVED_REGIONS) {
+				log_err("Too many reserved regions!\n");
+				goto collected;
+			}
+
 			start = fdt32_to_cpu(ptr[1]);
 			size = fdt32_to_cpu(ptr[3]);
 			/*
@@ -156,6 +161,7 @@ static void configure_reserved_memory(void)
 		}
 	}
 
+collected:
 	/* Sort the reserved memory regions by address */
 	count = i;
 	qsort(res, count, sizeof(res[0]), fdt_cmp_res);
