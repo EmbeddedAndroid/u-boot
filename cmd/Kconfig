@@ -2854,6 +2854,16 @@ config CMD_BLOB
 	  generation/use as key for cryptographic operation. Key
 	  modifier should be 16 byte long.
 
+config CMD_DRTM
+	bool "Enable the 'drtm' command"
+	depends on ARM64 && ARM_SMCCC && LMB
+	help
+	  Arm DRTM (DEN0113) dynamic launch: 'drtm info' shows what the
+	  firmware's Dynamic Configuration Environment supports, 'drtm launch'
+	  quiesces U-Boot and starts a loaded DLME image (for example a
+	  hypervisor) through DRTM_DYNAMIC_LAUNCH, which measures it into the
+	  TPM's D-RTM PCRs.
+
 config CMD_HASH
 	bool "Support 'hash' command"
 	select HASH

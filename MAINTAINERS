@@ -329,6 +329,13 @@ F:	drivers/mmc/ca_dw_mmc.c
 F:	drivers/spi/ca_sflash.c
 F:	drivers/net/phy/ca_phy.c
 
+ARM DRTM
+M:	Tyler Baker <tyler.baker@oss.qualcomm.com>
+S:	Maintained
+F:	cmd/drtm.c
+F:	doc/usage/cmd/drtm.rst
+F:	test/py/tests/test_drtm.py
+
 ARM FF-A
 M:	Abdellatif El Khlifi <abdellatif.elkhlifi@arm.com>
 S:	Maintained
