@@ -298,6 +298,13 @@ F:	drivers/net/cortina_ni.h
 F:	drivers/net/phy/ca_phy.c
 F:	configs/cortina_presidio-asic-pnand_defconfig
 
+ARM DRTM
+M:	Tyler Baker <tyler.baker@oss.qualcomm.com>
+S:	Maintained
+F:	cmd/drtm.c
+F:	doc/usage/cmd/drtm.rst
+F:	test/py/tests/test_drtm.py
+
 ARM FF-A
 M:	Abdellatif El Khlifi <abdellatif.elkhlifi@arm.com>
 S:	Maintained
