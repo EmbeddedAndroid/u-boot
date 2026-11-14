@@ -57,7 +57,9 @@ static int ipq5424_enable(struct clk *clk)
 }
 
 static const struct qcom_reset_map ipq5424_gcc_resets[] = {
+	[GCC_USB_BCR] = { 0x2c000 },
 	[GCC_SDCC_BCR] = { 0x33000 },
+	[GCC_USB1_BCR] = { 0x3c000 },
 };
 
 static struct msm_clk_data ipq5424_gcc_data = {
