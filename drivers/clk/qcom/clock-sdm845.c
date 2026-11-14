@@ -274,6 +274,8 @@ static int sdm845_clk_enable(struct clk *clk)
 }
 
 static const struct qcom_reset_map sdm845_gcc_resets[] = {
+	[GCC_PCIE_0_BCR] = { 0x6b000 },
+	[GCC_PCIE_1_BCR] = { 0x8d000 },
 	[GCC_QUPV3_WRAPPER_0_BCR] = { 0x17000 },
 	[GCC_QUPV3_WRAPPER_1_BCR] = { 0x18000 },
 	[GCC_QUSB2PHY_PRIM_BCR] = { 0x12000 },
