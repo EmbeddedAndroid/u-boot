@@ -68,6 +68,7 @@ static int ipq9574_enable(struct clk *clk)
 
 static const struct qcom_reset_map ipq9574_gcc_resets[] = {
 	[GCC_SDCC_BCR] = { 0x33000 },
+	[GCC_USB_BCR] = { 0x2c000 },
 };
 
 static struct msm_clk_data ipq9574_gcc_data = {
