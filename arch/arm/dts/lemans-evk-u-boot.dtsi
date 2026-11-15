@@ -19,6 +19,11 @@
 	bootph-all;
 };
 
+/* The secure world owns the dTPM and its SPI engine (QUP2 SE2) */
+&spi16 {
+	status = "disabled";
+};
+
 &spi21 {
 	assigned-clocks = <&gcc GCC_QUPV3_WRAP3_S0_CLK>;
 	assigned-clock-rates = <48000000>;
