@@ -43,6 +43,11 @@
 	bootph-all;
 };
 
+/* The secure world owns the dTPM and its SPI engine (QUP2 SE2) */
+&spi16 {
+	status = "disabled";
+};
+
 &tlmm {
 	bootph-all;   /* Make TLMM GPIO controller available in SPL */
 };
