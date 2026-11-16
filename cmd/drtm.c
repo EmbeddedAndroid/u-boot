@@ -10,6 +10,7 @@
 #include <lmb.h>
 #include <mapmem.h>
 #include <vsprintf.h>
+#include <wdt.h>
 #include <asm/system.h>
 #include <asm/u-boot-arm.h>
 #include <linux/arm-smccc.h>
@@ -248,6 +249,13 @@ static int do_drtm_launch(struct cmd_tbl *cmdtp, int flag, int argc,
 	args->dlme_img_size = img_size;
 	args->dlme_data_off = data_off;
 	unmap_sysmem(args);
+
+	/* U-Boot stops servicing watchdogs at the launch */
+	ret = IS_ENABLED(CONFIG_WDT) ? wdt_stop_all() : 0;
+	if (ret) {
+		printf("DRTM: cannot stop the watchdogs: %ld\n", ret);
+		return CMD_RET_FAILURE;
+	}
 
 	printf("DRTM: launching DLME at 0x%lx\n", dlme + ep_off);
 	bootm_final(0);

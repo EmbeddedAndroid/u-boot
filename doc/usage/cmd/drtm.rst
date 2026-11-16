@@ -62,12 +62,16 @@ drtm launch
 
     Arguments U-Boot can check, memory that is not free, launch features
     that do not match the firmware, and a firmware without dynamic launch
-    are refused first. Then U-Boot quiesces as for an OS boot (devices
-    that do DMA or need preparing for the OS removed, caches cleaned and
-    disabled) and issues DRTM_DYNAMIC_LAUNCH. The DCE only accepts the
-    call from the normal world, so the command refuses to run when U-Boot
-    runs at EL3. The DLME starts at EL2 when EL2 is implemented, at EL1
-    otherwise. On success the DLME runs and the command does not return.
+    are refused first. Running watchdogs are stopped next, as U-Boot stops
+    servicing them at the launch; a DLME that wants a watchdog starts it
+    again. A watchdog that cannot be stopped refuses the launch (those
+    already stopped stay stopped). Then U-Boot quiesces as for an OS boot
+    (devices that do DMA or need preparing for the OS removed, caches
+    cleaned and disabled) and issues DRTM_DYNAMIC_LAUNCH. The DCE only
+    accepts the call from the normal world, so the command refuses to run
+    when U-Boot runs at EL3. The DLME starts at EL2 when EL2 is implemented,
+    at EL1 otherwise. On success the DLME runs and the command does not
+    return.
 
     A launch the firmware refuses prints the DEN0113 return code and
     resets the board. The firmware may restrict the DLME region further
