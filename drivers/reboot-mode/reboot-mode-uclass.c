@@ -55,6 +55,24 @@ int dm_reboot_mode_update(struct udevice *dev)
 	return 0;
 }
 
+int dm_reboot_mode_set(struct udevice *dev, const char *name)
+{
+	struct reboot_mode_ops *ops = reboot_mode_get_ops(dev);
+	const struct reboot_mode_uclass_platdata *plat_data =
+		dev_get_uclass_plat(dev);
+	int i;
+
+	if (!ops->set)
+		return -ENOSYS;
+
+	for (i = 0; i < plat_data->count; i++) {
+		if (!strcmp(plat_data->modes[i].mode_name, name))
+			return ops->set(dev, plat_data->modes[i].mode_id);
+	}
+
+	return -ENOENT;
+}
+
 int dm_reboot_mode_pre_probe(struct udevice *dev)
 {
 	struct reboot_mode_uclass_platdata *plat_data;

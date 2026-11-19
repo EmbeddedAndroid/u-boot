@@ -53,4 +53,14 @@ struct reboot_mode_ops {
  */
 int dm_reboot_mode_update(struct udevice *dev);
 
+/**
+ * dm_reboot_mode_set() - Store a reboot mode by name for the next boot.
+ *
+ * @dev:	Reboot mode device
+ * @name:	Mode name, the part after "mode-" in the device tree property
+ * Return: 0 if OK, -ENOENT if @dev has no such mode, -ENOSYS if @dev cannot
+ * store a mode, other -ve on error
+ */
+int dm_reboot_mode_set(struct udevice *dev, const char *name);
+
 #endif /* REBOOT_MODE_REBOOT_MODE_H__ */

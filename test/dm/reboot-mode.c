@@ -66,3 +66,26 @@ static int dm_test_reboot_mode_rtc(struct unit_test_state *uts)
 }
 DM_TEST(dm_test_reboot_mode_rtc,
 	UTF_PROBE_TEST | UTF_SCAN_FDT | UTF_FLAT_TREE);
+
+static int dm_test_reboot_mode_set(struct unit_test_state *uts)
+{
+	struct udevice *rtc_dev;
+	struct udevice *rm_dev;
+	u32 read_val;
+
+	ut_assertok(uclass_get_device_by_name(UCLASS_RTC, "rtc@43", &rtc_dev));
+	ut_assertok(uclass_get_device_by_name(UCLASS_REBOOT_MODE,
+					      "reboot-mode@14", &rm_dev));
+
+	ut_assertok(dm_reboot_mode_set(rm_dev, "download"));
+	ut_assertok(dm_rtc_read(rtc_dev, REG_AUX0, (u8 *)&read_val, 4));
+	ut_asserteq(cpu_to_be32(0x51939147), read_val);
+
+	ut_asserteq(-ENOENT, dm_reboot_mode_set(rm_dev, "no-such-mode"));
+	ut_assertok(dm_rtc_read(rtc_dev, REG_AUX0, (u8 *)&read_val, 4));
+	ut_asserteq(cpu_to_be32(0x51939147), read_val);
+
+	return 0;
+}
+DM_TEST(dm_test_reboot_mode_set,
+	UTF_PROBE_TEST | UTF_SCAN_FDT | UTF_FLAT_TREE);
