@@ -87,5 +87,34 @@ For example:
 
   $ edl.py --loader /path/to/prog_firehose_ddr.elf w uefi_a u-boot.mbn
 
+Ethernet
+--------
+
+The IQ-9 EVK (``qcom/lemans-evk``) and the Arduino VENTUNO Q
+(``qcom/monaco-arduino-monza``) connect EMAC0 through the SGMII SerDes to a
+Qualcomm QCA8081 PHY. ``qcom_defconfig`` builds the drivers for both.
+``qcom_lemans_defconfig`` builds the IQ-9 EVK devicetree.
+
+On the VENTUNO Q, U-Boot runs as BL33 of the TF-A and OP-TEE stack. Build it
+from ``qcom_defconfig`` with the ``tfa-optee.config`` fragment and select the
+VENTUNO Q devicetree:
+
+.. code-block:: bash
+
+  $ make O=.output qcom_defconfig tfa-optee.config
+  $ make -j8 CROSS_COMPILE=<aarch64 toolchain prefix> O=.output DEVICE_TREE=qcom/monaco-arduino-monza
+
+The resulting ``.output/u-boot.bin`` is the BL33 image of the TF-A FIP.
+
+The IQ-9 EVK reads its MAC address from the on-board EEPROM, through the
+``mac-address`` nvmem cell of its devicetree. The VENTUNO Q devicetree
+describes no MAC address source, so set one before using the network: a
+locally administered address, unique on the network, for example:
+
+.. code-block:: none
+
+  => setenv ethaddr 02:00:00:00:00:01
+  => dhcp
+
 .. _edl: https://github.com/bkerler/edl
 .. _dragonwing IQ9 bootbinaries: https://artifacts.codelinaro.org/ui/native/qli-ci/flashable-binaries/qimpsdk/qcs9075-rb8-core-kit
