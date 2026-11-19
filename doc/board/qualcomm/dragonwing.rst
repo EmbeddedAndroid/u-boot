@@ -87,5 +87,30 @@ For example:
 
   $ edl.py --loader /path/to/prog_firehose_ddr.elf w uefi_a u-boot.mbn
 
+Ethernet
+--------
+
+The IQ-9 EVK (``qcom/lemans-evk``) and the Arduino VENTUNO Q
+(``qcom/monaco-arduino-monza``) connect EMAC0 through the SGMII SerDes to a
+Qualcomm QCA8081 PHY. ``qcom_defconfig`` builds the drivers for both.
+``qcom_lemans_defconfig`` builds the IQ-9 EVK devicetree;
+``qcom_monaco_defconfig`` defaults to the IQ-8 EVK, so select the VENTUNO Q
+devicetree:
+
+.. code-block:: bash
+
+  $ make O=.output qcom_monaco_defconfig
+  $ make -j8 CROSS_COMPILE=<aarch64 toolchain prefix> O=.output DEVICE_TREE=qcom/monaco-arduino-monza u-boot.mbn
+
+The IQ-9 EVK reads its MAC address from the on-board EEPROM, through the
+``mac-address`` nvmem cell of its devicetree. The VENTUNO Q devicetree
+describes no MAC address source, so set one before using the network: a
+locally administered address, unique on the network, for example:
+
+.. code-block:: none
+
+  => setenv ethaddr 02:00:00:00:00:01
+  => dhcp
+
 .. _edl: https://github.com/bkerler/edl
 .. _dragonwing IQ9 bootbinaries: https://artifacts.codelinaro.org/ui/native/qli-ci/flashable-binaries/qimpsdk/qcs9075-rb8-core-kit
