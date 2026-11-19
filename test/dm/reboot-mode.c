@@ -6,6 +6,7 @@
 #include <dm.h>
 #include <reboot-mode/reboot-mode.h>
 #include <env.h>
+#include <fastboot.h>
 #include <log.h>
 #include <asm/gpio.h>
 #include <asm/rtc.h>
@@ -88,4 +89,25 @@ static int dm_test_reboot_mode_set(struct unit_test_state *uts)
 	return 0;
 }
 DM_TEST(dm_test_reboot_mode_set,
+	UTF_PROBE_TEST | UTF_SCAN_FDT | UTF_FLAT_TREE);
+
+/* reboot-mode0 has no "bootloader" mode, so the RTC-backed device takes it */
+static int dm_test_reboot_mode_fastboot(struct unit_test_state *uts)
+{
+	struct udevice *rtc_dev;
+	u32 val = 0;
+
+	if (!CONFIG_IS_ENABLED(FASTBOOT))
+		return -EAGAIN;
+
+	ut_assertok(uclass_get_device_by_name(UCLASS_RTC, "rtc@43", &rtc_dev));
+	ut_assertok(dm_rtc_write(rtc_dev, REG_AUX0, (u8 *)&val, 4));
+
+	ut_assertok(fastboot_set_reboot_flag(FASTBOOT_REBOOT_REASON_BOOTLOADER));
+	ut_assertok(dm_rtc_read(rtc_dev, REG_AUX0, (u8 *)&val, 4));
+	ut_asserteq(cpu_to_be32(0x02000000), val);
+
+	return 0;
+}
+DM_TEST(dm_test_reboot_mode_fastboot,
 	UTF_PROBE_TEST | UTF_SCAN_FDT | UTF_FLAT_TREE);

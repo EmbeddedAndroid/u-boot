@@ -17,7 +17,8 @@ The current implementation supports the following standard commands:
 - ``flash`` (if enabled)
 - ``getvar``
 - ``reboot``
-- ``reboot-bootloader``
+- ``reboot-bootloader``, ``reboot-fastboot`` and ``reboot-recovery`` (see
+  `Reboot reason`_)
 - ``set_active`` (only a stub implementation which always succeeds)
 - ``ucmd`` (if enabled)
 - ``acmd`` (if enabled)
@@ -119,6 +120,23 @@ Reboot commands require ``CONFIG_SPL_FASTBOOT_REBOOT`` and a platform
 ``reset_cpu()`` implementation. The ``reboot-bootloader``, ``reboot-fastboot``
 and ``reboot-recovery`` commands also require a platform
 ``fastboot_set_reboot_flag()`` implementation.
+
+Reboot reason
+-------------
+
+``reboot-bootloader``, ``reboot-fastboot`` and ``reboot-recovery`` store a
+reboot reason before the reset, so the next boot can act on it. Unless the
+board overrides ``fastboot_set_reboot_flag()``, the reason is stored:
+
+- in the first reboot-mode device (``CONFIG_DM_REBOOT_MODE``) that has a mode
+  named ``bootloader``, ``fastboot`` or ``recovery`` respectively, i.e. a
+  ``mode-bootloader`` etc. property in its device tree node; the next boot
+  reads it back into the reboot-mode environment variable;
+- otherwise in the Android bootloader control block of the ``misc``
+  partition (``CONFIG_CMD_BCB``).
+
+If neither is available the command fails with ``Cannot set reboot flag`` and
+the board is not reset.
 
 Fastboot environment variables
 ------------------------------

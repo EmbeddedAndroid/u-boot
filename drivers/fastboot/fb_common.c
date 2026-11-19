@@ -13,9 +13,11 @@
 #include <bcb.h>
 #include <command.h>
 #include <cpu_func.h>
+#include <dm.h>
 #include <env.h>
 #include <fastboot.h>
 #include <net.h>
+#include <reboot-mode/reboot-mode.h>
 #include <vsprintf.h>
 
 /**
@@ -80,15 +82,41 @@ void fastboot_okay(const char *reason, char *response)
 		fastboot_response("OKAY", response, NULL);
 }
 
+/*
+ * Store the reason in the first reboot-mode device that has a mode of the
+ * same name ("mode-bootloader" etc. in its device tree node).
+ */
+static int __maybe_unused fastboot_set_reboot_mode(enum fastboot_reboot_reason reason)
+{
+	static const char * const modes[] = {
+		[FASTBOOT_REBOOT_REASON_BOOTLOADER] = "bootloader",
+		[FASTBOOT_REBOOT_REASON_FASTBOOTD] = "fastboot",
+		[FASTBOOT_REBOOT_REASON_RECOVERY] = "recovery",
+	};
+	struct udevice *dev;
+	int ret;
+
+	if (reason >= FASTBOOT_REBOOT_REASONS_COUNT)
+		return -EINVAL;
+
+	uclass_foreach_dev_probe(UCLASS_REBOOT_MODE, dev) {
+		ret = dm_reboot_mode_set(dev, modes[reason]);
+		if (ret != -ENOENT && ret != -ENOSYS)
+			return ret;
+	}
+
+	return -ENOENT;
+}
+
 /**
  * fastboot_set_reboot_flag() - Set flag to indicate reboot-bootloader
  *
  * Set flag which indicates that we should reboot into the bootloader
  * following the reboot that fastboot executes after this function.
  *
- * This function should be overridden in your board file with one
- * which sets whatever flag your board specific Android bootloader flow
- * requires in order to re-enter the bootloader.
+ * The default stores the reason in a reboot-mode device when one has a
+ * matching mode, and otherwise in the Android BCB of the "misc" partition.
+ * Boards whose bootloader flow needs another flag override this function.
  */
 int __weak fastboot_set_reboot_flag(enum fastboot_reboot_reason reason)
 {
@@ -109,6 +137,12 @@ int __weak fastboot_set_reboot_flag(enum fastboot_reboot_reason reason)
 	const char *bcb_iface = CONFIG_IS_ENABLED(FASTBOOT_FLASH_BLOCK,
 						  (CONFIG_VAL(FASTBOOT_FLASH_BLOCK_INTERFACE_NAME)),
 						  ("mmc"));
+
+	if (IS_ENABLED(CONFIG_DM_REBOOT_MODE)) {
+		ret = fastboot_set_reboot_mode(reason);
+		if (ret != -ENOENT)
+			return ret;
+	}
 
 	if (device == -1) {
 		device = CONFIG_IS_ENABLED(FASTBOOT_FLASH_MMC,
