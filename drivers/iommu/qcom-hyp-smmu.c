@@ -21,6 +21,10 @@
 #define ARM_SMMU_GR0 0
 #define ARM_SMMU_GR1 1
 
+#define ARM_SMMU_GR0_sCR0 0x0
+#define ARM_SMMU_sCR0_CLIENTPD BIT(0) /* Transactions bypass the SMMU */
+#define ARM_SMMU_sCR0_USFCFG BIT(10) /* Unmatched streams fault */
+
 #define ARM_SMMU_GR0_ID0 0x20
 #define ARM_SMMU_ID0_NUMSMRG GENMASK(7, 0) /* Number of stream mapping groups */
 #define ARM_SMMU_GR0_ID1 0x24
@@ -92,8 +96,10 @@ struct qcom_smmu_priv {
 	phys_addr_t base;
 	struct list_head devices;
 	struct udevice *dev;
-	/* SMMU is not needed when running in EL2 */
+	/* EL2 and the SMMU is disabled: every transaction bypasses it */
 	bool disable;
+	/* EL2 and streams without a stream mapping entry fault */
+	bool usf_fault;
 
 	/* Read-once config */
 	int num_cb;
@@ -302,7 +308,8 @@ static int qcom_smmu_connect(struct udevice *dev)
 	if (ret < 0 || ret > 0xff) {
 		printf("Error: %s: failed to allocate context bank for %s\n",
 		       __func__, dev->name);
-		return 0;
+		/* Fail the device only if its DMA would fault */
+		return priv->usf_fault ? -ENOSPC : 0;
 	}
 	mdev->cbx = ret;
 
@@ -354,7 +361,16 @@ static int qcom_smmu_probe(struct udevice *dev)
 	priv->base = dev_read_addr(dev);
 	INIT_LIST_HEAD(&priv->devices);
 
-	priv->disable = current_el() > 1;
+	/*
+	 * In EL2 no hypervisor sits between U-Boot and the SMMU. If the boot
+	 * firmware left it disabled (CLIENTPD), every transaction bypasses it
+	 * and its stream mapping and context bank registers hold UNKNOWN
+	 * values, so there is nothing to set up and nothing to trust. In EL1
+	 * the registers are the hypervisor's view and are used as they are.
+	 */
+	val = gr0_readl(priv, ARM_SMMU_GR0_sCR0);
+	priv->disable = current_el() > 1 && (val & ARM_SMMU_sCR0_CLIENTPD);
+	priv->usf_fault = current_el() > 1 && (val & ARM_SMMU_sCR0_USFCFG);
 
 	/* Read SMMU config */
 	val = gr0_readl(priv, ARM_SMMU_GR0_ID0);
