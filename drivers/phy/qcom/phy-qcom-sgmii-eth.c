@@ -327,13 +327,9 @@ static int qcom_sgmii_eth_probe(struct udevice *dev)
 		return ret;
 	}
 
-	/*
-	 * Get vdda-0p9 supply regulator.
-	 * Linux: devm_regulator_get(dev, "vdda-0p9")
-	 * DTS must contain "vdda-0p9-supply" pointing to a PMIC LDO.
-	 */
+	/* Optional in the binding; boards may only describe phy-supply */
 	ret = device_get_supply_regulator(dev, "vdda-0p9-supply", &priv->vdda_0p9);
-	if (ret) {
+	if (ret && ret != -ENOENT) {
 		dev_err(dev, "device_get_supply_regulator(vdda-0p9) failed: %d\n", ret);
 		return ret;
 	}
@@ -372,16 +368,16 @@ static int qcom_sgmii_eth_power_on(struct phy *phy)
 	int cleanup_ret;
 	int ret;
 
-	ret = regulator_set_enable(priv->vdda_0p9, true);
+	ret = regulator_set_enable_if_allowed(priv->vdda_0p9, true);
 	if (ret) {
-		dev_err(dev, "regulator_set_enable(vdda-0p9) failed: %d\n", ret);
+		dev_err(dev, "failed to enable vdda-0p9: %d\n", ret);
 		return ret;
 	}
 
 	ret = clk_enable(&priv->clk);
 	if (ret) {
 		dev_err(dev, "clk_enable(sgmi_ref) failed: %d\n", ret);
-		cleanup_ret = regulator_set_enable(priv->vdda_0p9, false);
+		cleanup_ret = regulator_set_enable_if_allowed(priv->vdda_0p9, false);
 		if (cleanup_ret)
 			dev_err(dev, "failed to disable vdda-0p9: %d\n",
 				cleanup_ret);
@@ -395,7 +391,7 @@ static int qcom_sgmii_eth_power_on(struct phy *phy)
 			dev_err(dev, "failed to disable sgmi_ref: %d\n",
 				cleanup_ret);
 
-		cleanup_ret = regulator_set_enable(priv->vdda_0p9, false);
+		cleanup_ret = regulator_set_enable_if_allowed(priv->vdda_0p9, false);
 		if (cleanup_ret)
 			dev_err(dev, "failed to disable vdda-0p9: %d\n",
 				cleanup_ret);
@@ -470,7 +466,7 @@ static int qcom_sgmii_eth_power_off(struct phy *phy)
 		first_err = ret;
 	}
 
-	ret = regulator_set_enable(priv->vdda_0p9, false);
+	ret = regulator_set_enable_if_allowed(priv->vdda_0p9, false);
 	if (ret) {
 		dev_err(dev, "failed to disable vdda-0p9: %d\n", ret);
 		if (!first_err)
