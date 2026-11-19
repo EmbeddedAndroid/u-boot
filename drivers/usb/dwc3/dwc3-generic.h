@@ -18,6 +18,8 @@ struct dwc3_glue_data {
 	struct reset_ctl_bulk	resets;
 	fdt_addr_t regs;
 	fdt_size_t size;
+	/* A child was removed: its glue setup may be gone */
+	bool reconfigure;
 };
 
 struct dwc3_glue_ops {

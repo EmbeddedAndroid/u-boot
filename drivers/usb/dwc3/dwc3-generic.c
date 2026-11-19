@@ -729,6 +729,43 @@ int dwc3_glue_probe(struct udevice *dev)
 	return 0;
 }
 
+/*
+ * Removing a child can power off the power domain it shares with the glue
+ * (flat bindings use one node for both), which loses the glue setup done
+ * at probe. Redo it before the child is probed again.
+ */
+static int dwc3_glue_child_post_remove(struct udevice *child)
+{
+	struct dwc3_glue_data *glue = dev_get_plat(child->parent);
+
+	glue->reconfigure = true;
+
+	return 0;
+}
+
+static int dwc3_glue_child_pre_probe(struct udevice *child)
+{
+	struct udevice *dev = child->parent;
+	struct dwc3_glue_ops *ops = (struct dwc3_glue_ops *)dev_get_driver_data(dev);
+	struct dwc3_glue_data *glue = dev_get_plat(dev);
+	struct udevice *sibling;
+	int index = 0;
+
+	if (!glue->reconfigure || !ops || !ops->glue_configure)
+		return 0;
+
+	device_foreach_child(sibling, dev) {
+		if (sibling == child)
+			break;
+		index++;
+	}
+
+	ops->glue_configure(dev, index, usb_get_dr_mode(dev_ofnode(child)));
+	glue->reconfigure = false;
+
+	return 0;
+}
+
 int dwc3_glue_remove(struct udevice *dev)
 {
 	struct dwc3_glue_data *glue = dev_get_plat(dev);
@@ -772,6 +809,8 @@ U_BOOT_DRIVER(dwc3_generic_wrapper) = {
 	.bind = dwc3_glue_bind,
 	.probe = dwc3_glue_probe,
 	.remove = dwc3_glue_remove,
+	.child_pre_probe = dwc3_glue_child_pre_probe,
+	.child_post_remove = dwc3_glue_child_post_remove,
 	.plat_auto	= sizeof(struct dwc3_glue_data),
 
 };
