@@ -387,7 +387,7 @@ static int qcom_sgmii_eth_power_on(struct phy *phy)
 	ret = qcom_sgmii_eth_calibrate(dev, priv, priv->interface);
 	if (ret) {
 		cleanup_ret = clk_disable(&priv->clk);
-		if (cleanup_ret)
+		if (cleanup_ret && cleanup_ret != -ENOSYS)
 			dev_err(dev, "failed to disable sgmi_ref: %d\n",
 				cleanup_ret);
 
@@ -461,7 +461,7 @@ static int qcom_sgmii_eth_power_off(struct phy *phy)
 	serdes_writel(priv, 0x01, QSERDES_PCS_BASE + QPHY_PCS_PHY_START);
 
 	ret = clk_disable(&priv->clk);
-	if (ret) {
+	if (ret && ret != -ENOSYS) {
 		dev_err(dev, "failed to disable sgmi_ref: %d\n", ret);
 		first_err = ret;
 	}
